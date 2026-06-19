@@ -62,5 +62,15 @@ namespace RentalAPI.Repository
             return true;
         }
 
+        public async Task<SysmUser?> Login(string username, string password)
+        {
+            return await _context.SysmUsers.FirstOrDefaultAsync(x => x.UserName == username && x.Password == password);
+
+
+
+        }
+
+
+
     }
 }

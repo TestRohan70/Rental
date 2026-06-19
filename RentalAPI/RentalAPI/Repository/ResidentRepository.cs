@@ -36,17 +36,11 @@ namespace RentalAPI.Repository
                 return null;
 
             existing.Name = resident.Name;
-
             existing.Email = resident.Email;
-
             existing.Wing = resident.Wing;
-
             existing.FlatNo = resident.FlatNo;
-
             existing.Address = resident.Address;
-
             existing.UpdatedDate = DateTime.Now;
-
             await _context.SaveChangesAsync();
 
             return existing;
@@ -60,9 +54,7 @@ namespace RentalAPI.Repository
                 return false;
 
             _context.Residents.Remove(resident);
-
             await _context.SaveChangesAsync();
-
             return true;
         }
 
@@ -73,7 +65,6 @@ namespace RentalAPI.Repository
             if (existingResident != null)
             {
                 throw new InvalidOperationException("Email already exists.");
-
             }
 
             var resident = new Resident
@@ -90,10 +81,13 @@ namespace RentalAPI.Repository
             await _context.Residents.AddAsync(resident);
             await _context.SaveChangesAsync();
             await _notificationService.CreateResidentRegistrationNotification( resident);
-               
-
-
             return resident;
+        }
+
+
+        public async Task<Resident?> Login(string email, string password)
+        {
+            return await _context.Residents.FirstOrDefaultAsync(x => x.Email == email && x.Password == password && x.Status == "Approved");
         }
 
     }

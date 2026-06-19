@@ -7,5 +7,6 @@ namespace RentalAPI.Repository.IRepository
         Task<bool> ApproveResident(int residentId);
 
         Task<List<Resident>> GetPendingResidents();
+        Task<SysmUser?> Login(string username, string password);
     }
 }
