@@ -37,4 +37,18 @@ public class AdminController : ControllerBase
         return Ok(
             "Resident approved successfully.");
     }
+
+    [HttpPut("reject/{id}")]
+
+    public async Task<IActionResult> RejectResident(int id)
+    {
+        var result = await _adminRepository.RejectResident(id);
+        if (!result)
+        {
+            return NotFound();
+        }
+
+        return Ok(
+            "Resident rejected successfully.");
+    }
 }

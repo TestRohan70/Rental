@@ -40,8 +40,15 @@ namespace RentalAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Add([FromBody] CreateResidentDto dto)
         {
-            var result = await _repository.Register(dto);
-            return Ok(result);
+            try
+            {
+                var result = await _repository.Register(dto);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
         }
 
 
