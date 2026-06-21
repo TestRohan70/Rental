@@ -85,9 +85,9 @@ namespace RentalAPI.Repository
         }
 
 
-        public async Task<Resident?> Login(string email, string password)
+        public async Task<Resident?> Login(string UserName, string password)
         {
-            return await _context.Residents.FirstOrDefaultAsync(x => x.Email == email && x.Password == password && x.Status == "Approved");
+            return await _context.Residents.FirstOrDefaultAsync(x => x.Name == UserName && x.Password == password && x.Status == "Approved");
         }
 
     }

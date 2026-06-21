@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RentalAPI.DTO;
+using RentalAPI.Models;
 using RentalAPI.Repository;
 using RentalAPI.Repository.IRepository;
 
@@ -11,10 +12,7 @@ public class AuthController : ControllerBase
     private readonly IAdminRepository _userRepo;
     private readonly JwtService _jwt;
 
-    public AuthController(
-        IResidentRepository residentRepo,
-        IAdminRepository userRepo,
-        JwtService jwt)
+    public AuthController(IResidentRepository residentRepo, IAdminRepository userRepo, JwtService jwt)
     {
         _residentRepo = residentRepo;
         _userRepo = userRepo;
@@ -22,59 +20,63 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("resident-login")]
-    public async Task<IActionResult> ResidentLogin(
-        LoginDto dto)
+    public async Task<IActionResult> ResidentLogin(LoginDto dto)
+
     {
-        var resident =
-            await _residentRepo.Login(
-                dto.UserName,
-                dto.Password);
+        var resident = await _residentRepo.Login(dto.UserName, dto.Password);
 
         if (resident == null)
         {
-            return Unauthorized(
-                "Invalid Credentials");
+            return Unauthorized("Invalid Credentials");
+
         }
 
-        var token =
-            _jwt.GenerateToken(
-                resident.Id,
-                resident.Name,
-                "Resident");
-
+        var token = _jwt.GenerateToken(resident.Id, resident.Name, "Resident");
         return Ok(new
-        {
-            Token = token,
-            Role = "Resident"
-        });
+            {
+                Token = token,
+                Role = "Resident"
+            });
     }
 
-
-    [HttpPost("admin-login")]
-    public async Task<IActionResult> AdminLogin(
-        LoginDto dto)
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginDto dto)
     {
-        var user =
-            await _userRepo.Login(
-                dto.UserName,
-                dto.Password);
+        // 1. Check Admin
+        var admin = await _userRepo.Login(dto.UserName, dto.Password);
 
-        if (user == null)
+        if (admin != null)
         {
-            return Unauthorized(
-                "Invalid Credentials");
+            var token = _jwt.GenerateToken(admin.Id, admin.UserName, "Admin");
+
+            return Ok(new
+            {
+                Token = token,
+                Role = "Admin",
+                UserId = admin.Id,
+                UserName = admin.UserName
+            });
         }
 
-        var token =
-            _jwt.GenerateToken(
-                user.Id,
-                user.UserName,
-                "Admin");
+        // 2. Check Resident
+        var resident = await _residentRepo.Login(dto.UserName, dto.Password);
 
-        return Ok(new
+        if (resident != null)
         {
-            Token = token,
-            Role = "Admin"
+            var token = _jwt.GenerateToken(resident.Id, resident.Name, "Resident");
+            return Ok(new
+            {
+                Token = token,
+                Role = "Resident",
+                UserId = resident.Id,
+                UserName = resident.Name
+            });
+        }
+
+        // 3. Invalid credentials
+        return Unauthorized(new
+        {
+            Message = "Invalid Username or Password"
         });
     }
 }

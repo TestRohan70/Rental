@@ -13,7 +13,7 @@ namespace RentalAPI.Repository
         //Task<Resident> Add(CreateResidentDto dto);
         Task<Resident?> Update(int id, Resident resident);
         Task<Resident> Register(CreateResidentDto dto);
-        Task<Resident?> Login(string email, string password);
+        Task<Resident?> Login(string UserName, string password);
 
 
         Task<bool> Delete(int id);
