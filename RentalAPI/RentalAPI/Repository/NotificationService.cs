@@ -34,7 +34,9 @@ namespace RentalAPI.Services
                 UserId = admin.Id,
                 ResidentId = resident.Id,
                 Title = "New Resident Request",
-                Message = $"{resident.Name} " + $"({resident.Wing}-{resident.FlatNo}) " + $"requested approval.",
+                Message = resident.Role == "Security"
+                    ? $"{resident.Name} (Security Staff) requested approval."
+                    : $"{resident.Name} ({resident.Wing}-{resident.FlatNo}, {resident.Role}) requested approval.",
                 IsRead = false,
                 CreatedDate = DateTime.UtcNow
             });

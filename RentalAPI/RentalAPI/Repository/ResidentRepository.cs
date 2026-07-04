@@ -9,13 +9,15 @@ namespace RentalAPI.Repository
 {
     public class ResidentRepository : IResidentRepository
     {
+        private static readonly string[] AllowedRoles = ["Security", "Tenant", "Owner"];
+
         private readonly AppDbContext _context;
         private readonly INotificationService _notificationService;
 
-        public ResidentRepository(AppDbContext context, INotificationService _notificationService)
+        public ResidentRepository(AppDbContext context, INotificationService notificationService)
         {
             _context = context;
-            _notificationService = _notificationService;
+            _notificationService = notificationService;
         }
 
         public async Task<List<Resident>> GetAll()
@@ -67,13 +69,35 @@ namespace RentalAPI.Repository
                 throw new InvalidOperationException("Email already exists.");
             }
 
+            var role = NormalizeRole(dto.Role);
+            if (role is null)
+            {
+                throw new InvalidOperationException("Please select a valid role.");
+            }
+
+            var isSecurity = role == "Security";
+
+            if (!isSecurity)
+            {
+                if (string.IsNullOrWhiteSpace(dto.Wing))
+                {
+                    throw new InvalidOperationException("Please select your wing.");
+                }
+
+                if (dto.FlatNo < 1)
+                {
+                    throw new InvalidOperationException("Enter a valid flat number.");
+                }
+            }
+
             var resident = new Resident
             {
                 Name = dto.Name,
                 Email = dto.Email,
                 Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                Wing = dto.Wing,
-                FlatNo = dto.FlatNo,
+                Wing = isSecurity ? "—" : dto.Wing.Trim(),
+                FlatNo = isSecurity ? 0 : dto.FlatNo,
+                Role = role,
                 Status = "Pending",
                 CreatedDate = DateTime.UtcNow
             };
@@ -85,9 +109,35 @@ namespace RentalAPI.Repository
         }
 
 
-        public async Task<Resident?> Login(string UserName, string password)
+        public async Task<Resident?> Login(string userName, string password)
         {
-            return await _context.Residents.FirstOrDefaultAsync(x => x.Name == UserName && x.Password == password && x.Status == "Approved");
+            var login = userName.Trim();
+
+            var resident = await _context.Residents
+                .FirstOrDefaultAsync(x =>
+                    (x.Name == login || x.Email == login) &&
+                    x.Status == "Approved");
+
+            if (resident == null)
+                return null;
+
+            // Password verify karo
+            bool isValid = BCrypt.Net.BCrypt.Verify(
+                password,
+                resident.Password);
+
+            return isValid ? resident : null;
+        }
+
+        private static string? NormalizeRole(string? role)
+        {
+            if (string.IsNullOrWhiteSpace(role))
+            {
+                return null;
+            }
+
+            return AllowedRoles.FirstOrDefault(
+                allowed => allowed.Equals(role.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
     }

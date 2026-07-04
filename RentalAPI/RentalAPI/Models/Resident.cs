@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace RentalAPI.Models;
 
@@ -17,6 +19,7 @@ public partial class Resident
 
     public string Email { get; set; } = null!;
 
+    [JsonIgnore]
     public string Password { get; set; } = null!;
 
     public string? Address { get; set; }
@@ -27,6 +30,10 @@ public partial class Resident
 
     public string? OwnershipType { get; set; }
 
+    [Column("Role")]
+    [JsonPropertyName("role")]
+    public string? Role { get; set; }
+
     public DateTime? CreatedDate { get; set; }
 
     public DateTime? UpdatedDate { get; set; }
@@ -35,5 +42,6 @@ public partial class Resident
 
     public int? ApprovedBy { get; set; }
 
+    [JsonIgnore]
     public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 }

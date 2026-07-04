@@ -35,7 +35,12 @@ public class AuthController : ControllerBase
         return Ok(new
             {
                 Token = token,
-                Role = "Resident"
+                Role = "Resident",
+                ProfileRole = resident.Role,
+                UserId = resident.Id,
+                UserName = resident.Name,
+                Wing = resident.Wing,
+                FlatNo = resident.FlatNo
             });
     }
 
@@ -68,8 +73,11 @@ public class AuthController : ControllerBase
             {
                 Token = token,
                 Role = "Resident",
+                ProfileRole = resident.Role,
                 UserId = resident.Id,
-                UserName = resident.Name
+                UserName = resident.Name,
+                Wing = resident.Wing,
+                FlatNo = resident.FlatNo
             });
         }
 

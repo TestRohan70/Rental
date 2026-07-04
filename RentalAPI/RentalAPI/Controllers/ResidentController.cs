@@ -47,7 +47,12 @@ namespace RentalAPI.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return Conflict(new { message = ex.Message });
+                if (ex.Message.Contains("Email already exists", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Conflict(new { message = ex.Message });
+                }
+
+                return BadRequest(new { message = ex.Message });
             }
         }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace RentalAPI.Models;
 
@@ -19,7 +20,9 @@ public partial class Notification
 
     public DateTime CreatedDate { get; set; }
 
+    [JsonIgnore]
     public virtual Resident? Resident { get; set; }
 
+    [JsonIgnore]
     public virtual SysmUser User { get; set; } = null!;
 }

@@ -19,13 +19,19 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Resident> Residents { get; set; }
 
+    public virtual DbSet<VisitorRequest> VisitorRequests { get; set; }
+
     public virtual DbSet<SysmUser> SysmUsers { get; set; }
 
     //public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=ENV-BOM-480\\SQLEXPRESS;Database=Rental;Trusted_Connection=True;TrustServerCertificate=True;");
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            optionsBuilder.UseSqlServer("Server=ENV-BOM-480\\SQLEXPRESS;Database=Rental;Trusted_Connection=True;TrustServerCertificate=True;");
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -59,6 +65,9 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Email).HasMaxLength(200);
             entity.Property(e => e.Name).HasMaxLength(200);
             entity.Property(e => e.OwnershipType).HasMaxLength(100);
+            entity.Property(e => e.Role)
+                .HasColumnName("Role")
+                .HasMaxLength(100);
             entity.Property(e => e.Password).HasMaxLength(400);
             entity.Property(e => e.Society).HasMaxLength(200);
             entity.Property(e => e.Status)
@@ -66,6 +75,31 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValue("Pending");
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
             entity.Property(e => e.Wing).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<VisitorRequest>(entity =>
+        {
+            entity.ToTable("VisitorRequest");
+
+            entity.Property(e => e.VisitorName).HasMaxLength(200);
+            entity.Property(e => e.VisitorPhone).HasMaxLength(20);
+            entity.Property(e => e.Purpose).HasMaxLength(500);
+            entity.Property(e => e.Wing).HasMaxLength(50);
+            entity.Property(e => e.Status).HasMaxLength(20);
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.RespondedDate).HasColumnType("datetime");
+            entity.Property(e => e.AcknowledgedDate).HasColumnType("datetime");
+            entity.Property(e => e.VisitorPhotoUrl).HasMaxLength(500);
+
+            entity.HasOne(d => d.Resident)
+                .WithMany()
+                .HasForeignKey(d => d.ResidentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.Security)
+                .WithMany()
+                .HasForeignKey(d => d.SecurityId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<SysmUser>(entity =>
