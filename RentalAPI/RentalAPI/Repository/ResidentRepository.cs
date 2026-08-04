@@ -108,6 +108,64 @@ namespace RentalAPI.Repository
             return resident;
         }
 
+        public async Task<Resident> RegisterSecurityByAdmin(int adminId, RegisterSecurityStaffDto dto)
+        {
+            var admin = await _context.SysmUsers.FirstOrDefaultAsync(x =>
+                x.Id == adminId &&
+                x.Role == "Admin");
+
+            if (admin is null)
+            {
+                throw new InvalidOperationException("Only administrators can register gate security.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Name))
+            {
+                throw new InvalidOperationException("Enter the security staff name.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Email))
+            {
+                throw new InvalidOperationException("Enter a valid email address.");
+            }
+
+            if (string.IsNullOrWhiteSpace(dto.Password) || dto.Password.Length < 8)
+            {
+                throw new InvalidOperationException("Password must be at least 8 characters.");
+            }
+
+            var existingResident = await _context.Residents.FirstOrDefaultAsync(x => x.Email == dto.Email.Trim());
+            if (existingResident != null)
+            {
+                throw new InvalidOperationException("Email already exists.");
+            }
+
+            var resident = new Resident
+            {
+                Name = dto.Name.Trim(),
+                Email = dto.Email.Trim(),
+                Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                Wing = "—",
+                FlatNo = 0,
+                Role = "Security",
+                Status = "Approved",
+                ApprovedBy = adminId,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            await _context.Residents.AddAsync(resident);
+            await _context.SaveChangesAsync();
+            return resident;
+        }
+
+        public async Task<List<Resident>> GetGateSecurityStaff()
+        {
+            return await _context.Residents
+                .Where(x => x.Role == "Security")
+                .OrderByDescending(x => x.CreatedDate)
+                .ToListAsync();
+        }
+
 
         public async Task<Resident?> Login(string userName, string password)
         {

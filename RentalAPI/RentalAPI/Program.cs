@@ -31,6 +31,7 @@ builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 builder.Services.AddScoped<IVisitorRepository, VisitorRepository>();
 builder.Services.AddScoped<IVisitorPhotoStorageService, VisitorPhotoStorageService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ISocietyAlertRepository, SocietyAlertRepository>();
 
 builder.Services.AddScoped<JwtService>();
 

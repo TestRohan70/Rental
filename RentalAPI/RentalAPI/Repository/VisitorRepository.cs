@@ -54,16 +54,30 @@ public class VisitorRepository : IVisitorRepository
 
     public async Task<List<VisitorRequestDto>> GetGateRequestsAsync(int securityId)
     {
-        var today = DateTime.UtcNow.Date;
-
         var requests = await _context.VisitorRequests
             .AsNoTracking()
             .Include(x => x.Resident)
             .Include(x => x.Security)
             .Where(x =>
                 x.SecurityId == securityId &&
-                (x.Status != "Acknowledged" || x.AcknowledgedDate >= today))
+                (x.Status == "Pending" || x.Status == "Approved"))
             .OrderByDescending(x => x.CreatedDate)
+            .ToListAsync();
+
+        return requests.Select(x => MapToDto(x, x.Resident, x.Security)).ToList();
+    }
+
+    public async Task<List<VisitorRequestDto>> GetGateRequestHistoryAsync(int securityId)
+    {
+        var requests = await _context.VisitorRequests
+            .AsNoTracking()
+            .Include(x => x.Resident)
+            .Include(x => x.Security)
+            .Where(x =>
+                x.SecurityId == securityId &&
+                (x.Status == "Acknowledged" || x.Status == "Rejected"))
+            .OrderByDescending(x => x.AcknowledgedDate ?? x.RespondedDate ?? x.CreatedDate)
+            .Take(100)
             .ToListAsync();
 
         return requests.Select(x => MapToDto(x, x.Resident, x.Security)).ToList();

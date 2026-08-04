@@ -24,6 +24,13 @@ namespace RentalAPI.Repository
             return await _context.Residents.Where(x => x.Status == "Pending").ToListAsync();
         }
 
+        public async Task<bool> IsAdmin(int adminId)
+        {
+            return await _context.SysmUsers.AnyAsync(x =>
+                x.Id == adminId &&
+                x.Role == "Admin");
+        }
+
 
 
         public async Task<bool> ApproveResident(int residentId)

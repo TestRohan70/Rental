@@ -17,6 +17,8 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<Notification> Notifications { get; set; }
 
+    public virtual DbSet<SocietyAlert> SocietyAlerts { get; set; }
+
     public virtual DbSet<Resident> Residents { get; set; }
 
     public virtual DbSet<VisitorRequest> VisitorRequests { get; set; }
@@ -75,6 +77,21 @@ public partial class AppDbContext : DbContext
                 .HasDefaultValue("Pending");
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
             entity.Property(e => e.Wing).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<SocietyAlert>(entity =>
+        {
+            entity.ToTable("SocietyAlert");
+
+            entity.Property(e => e.Title).HasMaxLength(200);
+            entity.Property(e => e.Message).HasMaxLength(1000);
+            entity.Property(e => e.AlertType).HasMaxLength(50);
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+
+            entity.HasOne(d => d.CreatedBySecurity)
+                .WithMany()
+                .HasForeignKey(d => d.CreatedBySecurityId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<VisitorRequest>(entity =>

@@ -13,6 +13,8 @@ namespace RentalAPI.Repository
         //Task<Resident> Add(CreateResidentDto dto);
         Task<Resident?> Update(int id, Resident resident);
         Task<Resident> Register(CreateResidentDto dto);
+        Task<Resident> RegisterSecurityByAdmin(int adminId, RegisterSecurityStaffDto dto);
+        Task<List<Resident>> GetGateSecurityStaff();
         Task<Resident?> Login(string UserName, string password);
 
 

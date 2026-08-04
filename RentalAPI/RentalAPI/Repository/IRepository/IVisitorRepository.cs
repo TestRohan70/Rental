@@ -8,6 +8,8 @@ public interface IVisitorRepository
 
     Task<List<VisitorRequestDto>> GetGateRequestsAsync(int securityId);
 
+    Task<List<VisitorRequestDto>> GetGateRequestHistoryAsync(int securityId);
+
     Task<List<VisitorRequestDto>> GetResidentRequestsAsync(int residentId);
 
     Task<VisitorRequestDto?> ApproveAsync(int requestId, int residentId);

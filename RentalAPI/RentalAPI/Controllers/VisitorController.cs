@@ -55,6 +55,13 @@ public class VisitorController : ControllerBase
         return Ok(data);
     }
 
+    [HttpGet("gate/{securityId:int}/history")]
+    public async Task<IActionResult> GetGateRequestHistory(int securityId)
+    {
+        var data = await _visitorRepository.GetGateRequestHistoryAsync(securityId);
+        return Ok(data);
+    }
+
     [HttpGet("resident/{residentId:int}")]
     public async Task<IActionResult> GetResidentRequests(int residentId)
     {
