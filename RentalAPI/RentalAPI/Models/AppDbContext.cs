@@ -25,6 +25,20 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<SysmUser> SysmUsers { get; set; }
 
+    public virtual DbSet<SocietyMaster> SocietyMasters { get; set; }
+
+    public virtual DbSet<WingMaster> WingMasters { get; set; }
+
+    public virtual DbSet<FloorMaster> FloorMasters { get; set; }
+
+    public virtual DbSet<FlatMaster> FlatMasters { get; set; }
+
+    public virtual DbSet<FlatCategoryMaster> FlatCategoryMasters { get; set; }
+
+    public virtual DbSet<PmWingFloorConfig> PmWingFloorConfigs { get; set; }
+
+    public virtual DbSet<PmSocietyWingFlatConfig> PmSocietyWingFlatConfigs { get; set; }
+
     //public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -134,6 +148,83 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.UserName)
                 .HasMaxLength(200)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<SocietyMaster>(entity =>
+        {
+            entity.Property(e => e.Code).HasMaxLength(100);
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Location).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<WingMaster>(entity =>
+        {
+            entity.Property(e => e.Code).HasMaxLength(100);
+            entity.Property(e => e.Name).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<FloorMaster>(entity =>
+        {
+            entity.Property(e => e.Code).HasMaxLength(100);
+            entity.Property(e => e.Name).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<FlatMaster>(entity =>
+        {
+            entity.Property(e => e.Code).HasMaxLength(20);
+            entity.HasOne(d => d.Type)
+                .WithMany()
+                .HasForeignKey(d => d.TypeId)
+                .HasConstraintName("FK_FLAT_FLACategory_TypeID");
+        });
+
+        modelBuilder.Entity<FlatCategoryMaster>(entity =>
+        {
+            entity.Property(e => e.Type).HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<PmWingFloorConfig>(entity =>
+        {
+            entity.HasIndex(e => new { e.WingId, e.FloorId })
+                .IsUnique()
+                .HasDatabaseName("UQ_WingFloorConfig");
+
+            entity.HasOne(d => d.Wing)
+                .WithMany()
+                .HasForeignKey(d => d.WingId)
+                .HasConstraintName("FK_WingFloorConfig_Wing");
+
+            entity.HasOne(d => d.Floor)
+                .WithMany()
+                .HasForeignKey(d => d.FloorId)
+                .HasConstraintName("FK_WingFloorConfig_Floor");
+        });
+
+        modelBuilder.Entity<PmSocietyWingFlatConfig>(entity =>
+        {
+            entity.HasIndex(e => new { e.SocietyId, e.WingId, e.FloorId, e.FlatId })
+                .IsUnique()
+                .HasDatabaseName("UQ_SocietyWingFlatConfig");
+
+            entity.HasOne(d => d.Society)
+                .WithMany()
+                .HasForeignKey(d => d.SocietyId)
+                .HasConstraintName("FK_SocietyWingFlatConfig_Society");
+
+            entity.HasOne(d => d.Wing)
+                .WithMany()
+                .HasForeignKey(d => d.WingId)
+                .HasConstraintName("FK_SocietyWingFlatConfig_Wing");
+
+            entity.HasOne(d => d.Floor)
+                .WithMany()
+                .HasForeignKey(d => d.FloorId)
+                .HasConstraintName("FK_SocietyWingFlatConfig_Floor");
+
+            entity.HasOne(d => d.Flat)
+                .WithMany()
+                .HasForeignKey(d => d.FlatId)
+                .HasConstraintName("FK_SocietyWingFlatConfig_Flat");
         });
 
         OnModelCreatingPartial(modelBuilder);

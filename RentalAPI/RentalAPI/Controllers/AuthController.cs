@@ -52,12 +52,12 @@ public class AuthController : ControllerBase
 
         if (admin != null)
         {
-            var token = _jwt.GenerateToken(admin.Id, admin.UserName, "Admin");
+            var token = _jwt.GenerateToken(admin.Id, admin.UserName, admin.Role);
 
             return Ok(new
             {
                 Token = token,
-                Role = "Admin",
+                Role = admin.Role,
                 UserId = admin.Id,
                 UserName = admin.UserName
             });
