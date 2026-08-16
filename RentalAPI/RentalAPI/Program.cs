@@ -62,7 +62,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4200", "https://localhost:4200")
+        policy.WithOrigins("http://localhost:4200", "https://localhost:4200","https://premisus360.vercel.app")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -74,12 +74,10 @@ var app = builder.Build();
 
 
 
-if (app.Environment.IsDevelopment())
-{
+
     app.UseSwagger();
 
     app.UseSwaggerUI();
-}
 
 
 
