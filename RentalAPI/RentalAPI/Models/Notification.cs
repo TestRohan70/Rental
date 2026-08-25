@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace RentalAPI.Models;
 
+[Table("Notifications")]
 public partial class Notification
 {
     public int Id { get; set; }

@@ -1,21 +1,30 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RentalAPI.Constants;
+using RentalAPI.DTO;
 using RentalAPI.DTO.PAdmin;
 using RentalAPI.Repository.IRepository;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace RentalAPI.Controllers;
 
 [ApiController]
 [Route("api/padmin")]
-[Authorize(Roles = AppRoles.PAdmin)]
+[Authorize(Roles = AppRoles.SuperAdmin)]
 public class PAdminController : ControllerBase
 {
     private readonly ISocietyConfigurationRepository _repository;
+    private readonly IAdminRepository _adminRepository;
 
-    public PAdminController(ISocietyConfigurationRepository repository)
+    public PAdminController(
+        ISocietyConfigurationRepository repository,
+        IAdminRepository adminRepository)
     {
         _repository = repository;
+        _adminRepository = adminRepository;
     }
 
     [HttpGet("masters/wings")]
@@ -57,6 +66,45 @@ public class PAdminController : ControllerBase
     public async Task<IActionResult> CreateSociety([FromBody] CreateSocietyDto dto, CancellationToken cancellationToken)
     {
         return await ExecuteAsync(() => _repository.CreateSocietyAsync(dto, cancellationToken), nameof(GetSociety));
+    }
+
+    [HttpPost("societies/{societyId:int}/admin")]
+    [HttpPost("society-admin")]
+    public async Task<IActionResult> CreateSocietyAdmin([FromRoute] int societyId, [FromBody] CreateSocietyAdminRequestDto req)
+    {
+        var dto = new CreateSocietyAdminDto
+        {
+            SocietyId = societyId,
+            UserName = req.UserName,
+            Email = req.Email,
+            Password = req.Password
+        };
+
+        try
+        {
+            var mapping = await _adminRepository.CreateSocietyAdmin(dto);
+            return Ok(new
+            {
+                message = "SocietyAdmin created and assigned successfully.",
+                mapping.Id,
+                mapping.SocietyId,
+                mapping.UserId
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            if (ex.Message.Contains("already has an assigned", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+            {
+                return Conflict(new { message = ex.Message });
+            }
+
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPut("societies/{id:int}")]

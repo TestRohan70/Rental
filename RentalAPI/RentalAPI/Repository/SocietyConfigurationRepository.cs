@@ -121,8 +121,8 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
             throw new InvalidOperationException("Society cannot be deleted because it has active wing/floor/flat configuration.");
         }
 
-        var hasResidents = await _context.Residents
-            .AnyAsync(x => x.Society != null && x.Society.ToLower() == society.Name.ToLower(), cancellationToken);
+        var hasResidents = await _context.ResidentFlatMappings
+            .AnyAsync(x => x.SocietyWingFlatConfig.SocietyId == societyId && x.IsActive, cancellationToken);
 
         if (hasResidents)
         {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,15 +15,19 @@ public partial class AppDbContext : DbContext
     {
     }
 
-    public virtual DbSet<Notification> Notifications { get; set; }
+    public virtual DbSet<Role> Roles { get; set; }
 
-    public virtual DbSet<SocietyAlert> SocietyAlerts { get; set; }
+    public virtual DbSet<SysmUser> SysmUsers { get; set; }
 
     public virtual DbSet<Resident> Residents { get; set; }
 
-    public virtual DbSet<VisitorRequest> VisitorRequests { get; set; }
+    public virtual DbSet<SocietyUserMapping> SocietyUserMappings { get; set; }
 
-    public virtual DbSet<SysmUser> SysmUsers { get; set; }
+    public virtual DbSet<ResidentFlatMapping> ResidentFlatMappings { get; set; }
+
+    public virtual DbSet<Notification> Notifications { get; set; }
+
+    public virtual DbSet<VisitorRequest> VisitorRequests { get; set; }
 
     public virtual DbSet<SocietyMaster> SocietyMasters { get; set; }
 
@@ -39,79 +43,134 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<PmSocietyWingFlatConfig> PmSocietyWingFlatConfigs { get; set; }
 
-    //public virtual DbSet<User> Users { get; set; }
-
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
         {
-            optionsBuilder.UseSqlServer("Server=ENV-BOM-480\\SQLEXPRESS;Database=Rental;Trusted_Connection=True;TrustServerCertificate=True;");
+            optionsBuilder.UseSqlServer("Server=(localdb)\\MyLocalDB;Database=Premisus_DB;Trusted_Connection=True;TrustServerCertificate=True;");
         }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Notification>(entity =>
+        modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Notifica__3214EC07A3F9A14C");
+            entity.ToTable("Role");
+            entity.HasKey(e => e.Id).HasName("PK_RoleMaster");
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.Code).HasMaxLength(50);
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
 
-            entity.Property(e => e.CreatedDate)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
-            entity.Property(e => e.Title).HasMaxLength(200);
+            entity.HasIndex(e => e.Code, "UX_RoleMaster_Code").IsUnique();
+        });
 
-            entity.HasOne(d => d.Resident).WithMany(p => p.Notifications)
-                .HasForeignKey(d => d.ResidentId)
-                .HasConstraintName("FK__Notificat__Resid__52593CB8");
+        modelBuilder.Entity<SysmUser>(entity =>
+        {
+            entity.ToTable("SysmUser");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.Email).HasMaxLength(200);
+            entity.Property(e => e.Password).HasMaxLength(400);
+            entity.Property(e => e.UserName).HasMaxLength(200);
+            entity.Property(e => e.Role).HasMaxLength(50);
 
-            entity.HasOne(d => d.User).WithMany(p => p.Notifications)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Notificat__UserI__5165187F");
+            entity.HasOne(d => d.RoleNavigation)
+                .WithMany(p => p.Users)
+                .HasForeignKey(d => d.RoleId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_SysmUser_Role");
         });
 
         modelBuilder.Entity<Resident>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Resident__3214EC07B67162DF");
-
             entity.ToTable("Resident");
-
+            entity.HasKey(e => e.Id);
             entity.Property(e => e.Address).HasMaxLength(500);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
-            entity.Property(e => e.Email).HasMaxLength(200);
             entity.Property(e => e.Name).HasMaxLength(200);
-            entity.Property(e => e.OwnershipType).HasMaxLength(100);
-            entity.Property(e => e.Role)
-                .HasColumnName("Role")
-                .HasMaxLength(100);
-            entity.Property(e => e.Password).HasMaxLength(400);
-            entity.Property(e => e.Society).HasMaxLength(200);
-            entity.Property(e => e.Status)
-                .HasMaxLength(20)
-                .HasDefaultValue("Pending");
+            entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("Pending");
             entity.Property(e => e.UpdatedDate).HasColumnType("datetime");
-            entity.Property(e => e.Wing).HasMaxLength(50);
+
+            entity.HasOne(d => d.User)
+                .WithOne(p => p.Resident)
+                .HasForeignKey<Resident>(d => d.UserId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_Resident_SysmUser");
+
+            entity.HasOne(d => d.ApprovedByUser)
+                .WithMany()
+                .HasForeignKey(d => d.ApprovedBy)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<SocietyAlert>(entity =>
+        modelBuilder.Entity<SocietyUserMapping>(entity =>
         {
-            entity.ToTable("SocietyAlert");
+            entity.ToTable("SocietyUserMapping");
+            entity.HasKey(e => e.Id).HasName("PK_SocietyUserMapping");
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.SocietyId).HasColumnName("SocietyID");
+            entity.Property(e => e.UserId).HasColumnName("UserID");
 
-            entity.Property(e => e.Title).HasMaxLength(200);
-            entity.Property(e => e.Message).HasMaxLength(1000);
-            entity.Property(e => e.AlertType).HasMaxLength(50);
-            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.HasIndex(e => new { e.SocietyId, e.UserId }, "UQ_SocietyUserMapping_Society_User").IsUnique();
 
-            entity.HasOne(d => d.CreatedBySecurity)
+            entity.HasOne(d => d.Society)
                 .WithMany()
-                .HasForeignKey(d => d.CreatedBySecurityId)
+                .HasForeignKey(d => d.SocietyId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_SocietyUserMapping_Society");
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.SocietyUserMappings)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_SocietyUserMapping_User");
+        });
+
+        modelBuilder.Entity<ResidentFlatMapping>(entity =>
+        {
+            entity.ToTable("ResidentFlatMapping");
+            entity.HasKey(e => e.Id).HasName("PK_ResidentFlatMapping");
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.ResidentId).HasColumnName("ResidentID");
+            entity.Property(e => e.SocietyWingFlatConfigId).HasColumnName("SocietyWingFlatConfigID");
+            entity.Property(e => e.OwnershipType).HasMaxLength(50);
+
+            entity.HasOne(d => d.Resident)
+                .WithMany(p => p.FlatMappings)
+                .HasForeignKey(d => d.ResidentId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_ResidentFlatMapping_Resident");
+
+            entity.HasOne(d => d.SocietyWingFlatConfig)
+                .WithMany()
+                .HasForeignKey(d => d.SocietyWingFlatConfigId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_ResidentFlatMapping_SocietyWingFlatConfig");
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.ToTable("Notifications");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+            entity.Property(e => e.Title).HasMaxLength(200);
+
+            entity.HasOne(d => d.Resident)
+                .WithMany(p => p.Notifications)
+                .HasForeignKey(d => d.ResidentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(d => d.User)
+                .WithMany(p => p.Notifications)
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<VisitorRequest>(entity =>
         {
             entity.ToTable("VisitorRequest");
-
+            entity.HasKey(e => e.Id);
             entity.Property(e => e.VisitorName).HasMaxLength(200);
             entity.Property(e => e.VisitorPhone).HasMaxLength(20);
             entity.Property(e => e.Purpose).HasMaxLength(500);
@@ -125,33 +184,20 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.Resident)
                 .WithMany()
                 .HasForeignKey(d => d.ResidentId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_VisitorRequest_Resident");
 
-            entity.HasOne(d => d.Security)
+            entity.HasOne(d => d.SecurityUser)
                 .WithMany()
-                .HasForeignKey(d => d.SecurityId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        modelBuilder.Entity<SysmUser>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__SysmUser__3214EC27718C4C71");
-
-            entity.ToTable("SysmUser");
-
-            entity.Property(e => e.Id).HasColumnName("ID");
-            entity.Property(e => e.Email).HasMaxLength(200);
-            entity.Property(e => e.Password).HasMaxLength(400);
-            entity.Property(e => e.Role)
-                .HasMaxLength(50)
-                .IsUnicode(false);
-            entity.Property(e => e.UserName)
-                .HasMaxLength(200)
-                .IsUnicode(false);
+                .HasForeignKey(d => d.SecurityUserId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_VisitorRequest_Security");
         });
 
         modelBuilder.Entity<SocietyMaster>(entity =>
         {
+            entity.ToTable("society");
+            entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.Code).HasMaxLength(100);
             entity.Property(e => e.Name).HasMaxLength(100);
             entity.Property(e => e.Location).HasMaxLength(100);
@@ -159,19 +205,26 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<WingMaster>(entity =>
         {
+            entity.ToTable("wings");
+            entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.Code).HasMaxLength(100);
             entity.Property(e => e.Name).HasMaxLength(100);
         });
 
         modelBuilder.Entity<FloorMaster>(entity =>
         {
+            entity.ToTable("floors");
+            entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.Code).HasMaxLength(100);
             entity.Property(e => e.Name).HasMaxLength(100);
         });
 
         modelBuilder.Entity<FlatMaster>(entity =>
         {
-            entity.Property(e => e.Code).HasMaxLength(20);
+            entity.ToTable("Flat");
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.Code).HasColumnName("CODE").HasMaxLength(20);
+            entity.Property(e => e.TypeId).HasColumnName("TypeID");
             entity.HasOne(d => d.Type)
                 .WithMany()
                 .HasForeignKey(d => d.TypeId)
@@ -180,11 +233,18 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<FlatCategoryMaster>(entity =>
         {
+            entity.ToTable("FlatCategory");
+            entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.Type).HasMaxLength(20);
         });
 
         modelBuilder.Entity<PmWingFloorConfig>(entity =>
         {
+            entity.ToTable("pmWingFloorConfig");
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.WingId).HasColumnName("WingID");
+            entity.Property(e => e.FloorId).HasColumnName("FloorID");
+
             entity.HasIndex(e => new { e.WingId, e.FloorId })
                 .IsUnique()
                 .HasDatabaseName("UQ_WingFloorConfig");
@@ -202,6 +262,13 @@ public partial class AppDbContext : DbContext
 
         modelBuilder.Entity<PmSocietyWingFlatConfig>(entity =>
         {
+            entity.ToTable("pmSocietyWingFlatConfig");
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.SocietyId).HasColumnName("SocietyID");
+            entity.Property(e => e.WingId).HasColumnName("WingID");
+            entity.Property(e => e.FloorId).HasColumnName("FloorID");
+            entity.Property(e => e.FlatId).HasColumnName("FlatID");
+
             entity.HasIndex(e => new { e.SocietyId, e.WingId, e.FloorId, e.FlatId })
                 .IsUnique()
                 .HasDatabaseName("UQ_SocietyWingFlatConfig");

@@ -1,6 +1,7 @@
-﻿using RentalAPI.DTO;
+using RentalAPI.DTO;
 using RentalAPI.Models;
-
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace RentalAPI.Repository
 {
@@ -10,13 +11,13 @@ namespace RentalAPI.Repository
 
         Task<Resident?> GetById(int id);
 
-        //Task<Resident> Add(CreateResidentDto dto);
         Task<Resident?> Update(int id, Resident resident);
-        Task<Resident> Register(CreateResidentDto dto);
-        Task<Resident> RegisterSecurityByAdmin(int adminId, RegisterSecurityStaffDto dto);
-        Task<List<Resident>> GetGateSecurityStaff();
-        Task<Resident?> Login(string UserName, string password);
 
+        Task<Resident> Register(CreateResidentDto dto);
+
+        Task<Resident> RegisterResidentByAdmin(int adminUserId, CreateResidentUserDto dto);
+
+        Task<Resident> SelfRegister(SelfRegisterResidentDto dto);
 
         Task<bool> Delete(int id);
     }

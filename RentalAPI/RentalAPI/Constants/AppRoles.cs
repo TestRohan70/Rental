@@ -2,7 +2,8 @@ namespace RentalAPI.Constants;
 
 public static class AppRoles
 {
-    public const string Admin = "Admin";
-    public const string PAdmin = "pAdmin";
-    public const string Resident = "Resident";
+    public const string SuperAdmin = "SUPERADMIN";
+    public const string SocietyAdmin = "SOCIETYADMIN";
+    public const string Resident = "RESIDENT";
+    public const string Security = "SECURITY";
 }

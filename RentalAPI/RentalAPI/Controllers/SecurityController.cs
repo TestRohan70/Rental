@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using RentalAPI.DTO;
-using RentalAPI.Repository;
 using RentalAPI.Repository.IRepository;
+using System;
+using System.Threading.Tasks;
 
 namespace RentalAPI.Controllers;
 
@@ -23,10 +24,10 @@ public class SecurityController : ControllerBase
     {
         try
         {
-            var result = await _alertRepository.CreateAsync(createdById, dto);
+            var result = await _alertRepository.CreateAsync(createdBySecurityId: createdById, dto: dto);
             return Ok(result);
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex)
         {
             return BadRequest(new { message = ex.Message });
         }
@@ -40,7 +41,7 @@ public class SecurityController : ControllerBase
             var data = await _alertRepository.GetBySecurityIdAsync(createdById);
             return Ok(data);
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex)
         {
             return BadRequest(new { message = ex.Message });
         }

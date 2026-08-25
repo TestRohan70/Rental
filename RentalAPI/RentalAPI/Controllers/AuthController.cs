@@ -1,90 +1,105 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using RentalAPI.Constants;
 using RentalAPI.DTO;
 using RentalAPI.Models;
 using RentalAPI.Repository;
-using RentalAPI.Repository.IRepository;
+
+namespace RentalAPI.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
 public class AuthController : ControllerBase
 {
-    private readonly IResidentRepository _residentRepo;
-    private readonly IAdminRepository _userRepo;
+    private readonly AppDbContext _context;
     private readonly JwtService _jwt;
 
-    public AuthController(IResidentRepository residentRepo, IAdminRepository userRepo, JwtService jwt)
+    public AuthController(AppDbContext context, JwtService jwt)
     {
-        _residentRepo = residentRepo;
-        _userRepo = userRepo;
+        _context = context;
         _jwt = jwt;
     }
 
-    [HttpPost("resident-login")]
-    public async Task<IActionResult> ResidentLogin(LoginDto dto)
-
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        var resident = await _residentRepo.Login(dto.UserName, dto.Password);
-
-        if (resident == null)
+        if (string.IsNullOrWhiteSpace(dto.UserName) || string.IsNullOrWhiteSpace(dto.Password))
         {
-            return Unauthorized("Invalid Credentials");
-
+            return BadRequest(new { Message = "UserName/Email and Password are required." });
         }
 
-        var token = _jwt.GenerateToken(resident.Id, resident.Name, "Resident");
-        return Ok(new
+        var input = dto.UserName.Trim();
+
+        var user = await _context.SysmUsers
+            .Include(u => u.RoleNavigation)
+            .Include(u => u.Resident)
+            .FirstOrDefaultAsync(u =>
+                (u.UserName != null && u.UserName.ToLower() == input.ToLower()) ||
+                (u.Email != null && u.Email.ToLower() == input.ToLower()));
+
+        if (user == null)
+        {
+            return Unauthorized(new { Message = "Invalid Username or Password." });
+        }
+
+        if (!user.IsActive)
+        {
+            return Unauthorized(new { Message = "User account is inactive." });
+        }
+
+        bool isValidPassword = false;
+        if (!string.IsNullOrEmpty(user.Password))
+        {
+            if (user.Password.StartsWith("$2"))
             {
-                Token = token,
-                Role = "Resident",
-                ProfileRole = resident.Role,
-                UserId = resident.Id,
-                UserName = resident.Name,
-                Wing = resident.Wing,
-                FlatNo = resident.FlatNo
-            });
+                try
+                {
+                    isValidPassword = BCrypt.Net.BCrypt.Verify(dto.Password, user.Password);
+                }
+                catch { }
+            }
+
+            if (!isValidPassword && user.Password == dto.Password)
+            {
+                isValidPassword = true;
+            }
+        }
+
+        if (!isValidPassword)
+        {
+            return Unauthorized(new { Message = "Invalid Username or Password." });
+        }
+
+        var roleCode = user.RoleNavigation?.Code ?? AppRoles.Resident;
+
+        int? societyId = null;
+        if (roleCode == AppRoles.SocietyAdmin || roleCode == AppRoles.Security)
+        {
+            var userMapping = await _context.SocietyUserMappings
+                .FirstOrDefaultAsync(m => m.UserId == user.Id && m.IsActive);
+            societyId = userMapping?.SocietyId;
+        }
+
+        int? residentId = user.Resident?.Id;
+
+        var token = _jwt.GenerateToken(user, roleCode, societyId);
+
+        return Ok(new
+        {
+            Token = token,
+            UserId = user.Id,
+            UserName = user.UserName ?? user.Email,
+            Email = user.Email,
+            RoleId = user.RoleId,
+            Role = roleCode,
+            SocietyId = societyId,
+            ResidentId = residentId
+        });
     }
 
-    [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginDto dto)
+    [HttpPost("resident-login")]
+    public async Task<IActionResult> ResidentLogin([FromBody] LoginDto dto)
     {
-        // 1. Check Admin
-        var admin = await _userRepo.Login(dto.UserName, dto.Password);
-
-        if (admin != null)
-        {
-            var token = _jwt.GenerateToken(admin.Id, admin.UserName, admin.Role);
-
-            return Ok(new
-            {
-                Token = token,
-                Role = admin.Role,
-                UserId = admin.Id,
-                UserName = admin.UserName
-            });
-        }
-
-        // 2. Check Resident
-        var resident = await _residentRepo.Login(dto.UserName, dto.Password);
-
-        if (resident != null)
-        {
-            var token = _jwt.GenerateToken(resident.Id, resident.Name, "Resident");
-            return Ok(new
-            {
-                Token = token,
-                Role = "Resident",
-                ProfileRole = resident.Role,
-                UserId = resident.Id,
-                UserName = resident.Name,
-                Wing = resident.Wing,
-                FlatNo = resident.FlatNo
-            });
-        }
-
-        // 3. Invalid credentials
-        return Unauthorized(new
-        {
-            Message = "Invalid Username or Password"
-        });
+        return await Login(dto);
     }
 }

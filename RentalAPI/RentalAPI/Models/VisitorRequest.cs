@@ -1,7 +1,10 @@
+using System;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace RentalAPI.Models;
 
+[Table("VisitorRequest")]
 public class VisitorRequest
 {
     public int Id { get; set; }
@@ -18,7 +21,8 @@ public class VisitorRequest
 
     public int ResidentId { get; set; }
 
-    public int SecurityId { get; set; }
+    [Column("SecurityId")]
+    public int SecurityUserId { get; set; }
 
     public string Status { get; set; } = "Pending";
 
@@ -34,5 +38,6 @@ public class VisitorRequest
     public virtual Resident Resident { get; set; } = null!;
 
     [JsonIgnore]
-    public virtual Resident Security { get; set; } = null!;
+    [ForeignKey("SecurityUserId")]
+    public virtual SysmUser SecurityUser { get; set; } = null!;
 }
