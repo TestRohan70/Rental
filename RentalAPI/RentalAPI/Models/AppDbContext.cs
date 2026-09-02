@@ -29,6 +29,10 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<VisitorRequest> VisitorRequests { get; set; }
 
+    public virtual DbSet<VisitorStatus> VisitorStatuses { get; set; }
+
+    public virtual DbSet<VisitorVisit> VisitorVisits { get; set; }
+
     public virtual DbSet<SocietyMaster> SocietyMasters { get; set; }
 
     public virtual DbSet<WingMaster> WingMasters { get; set; }
@@ -175,11 +179,15 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.VisitorPhone).HasMaxLength(20);
             entity.Property(e => e.Purpose).HasMaxLength(500);
             entity.Property(e => e.Wing).HasMaxLength(50);
-            entity.Property(e => e.Status).HasMaxLength(20);
             entity.Property(e => e.CreatedDate).HasColumnType("datetime");
             entity.Property(e => e.RespondedDate).HasColumnType("datetime");
             entity.Property(e => e.AcknowledgedDate).HasColumnType("datetime");
             entity.Property(e => e.VisitorPhotoUrl).HasMaxLength(500);
+            entity.Property(e => e.VisitType).HasMaxLength(50);
+            entity.Property(e => e.ExpectedArrivalDateTime).HasColumnType("datetime");
+            entity.Property(e => e.OTPHash).HasMaxLength(500);
+            entity.Property(e => e.OTPExpiresAt).HasColumnType("datetime");
+            entity.Property(e => e.OTPVerifiedAt).HasColumnType("datetime");
 
             entity.HasOne(d => d.Resident)
                 .WithMany()
@@ -192,6 +200,67 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.SecurityUserId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_VisitorRequest_Security");
+
+            entity.HasOne(d => d.Society)
+                .WithMany()
+                .HasForeignKey(d => d.SocietyId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_VisitorRequest_Society");
+
+            entity.HasOne(d => d.SocietyWingFlatConfig)
+                .WithMany()
+                .HasForeignKey(d => d.SocietyWingFlatConfigId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_VisitorRequest_SocietyWingFlatConfig");
+
+            entity.HasOne(d => d.Status)
+                .WithMany()
+                .HasForeignKey(d => d.StatusId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_VisitorRequest_Status");
+        });
+
+        modelBuilder.Entity<VisitorStatus>(entity =>
+        {
+            entity.ToTable("VisitorStatus");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Code).HasMaxLength(50);
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<VisitorVisit>(entity =>
+        {
+            entity.ToTable("VisitorVisit");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CheckInDateTime).HasColumnType("datetime");
+            entity.Property(e => e.CheckOutDateTime).HasColumnType("datetime");
+            entity.Property(e => e.Gate).HasMaxLength(100);
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
+
+            entity.HasOne(d => d.VisitorRequest)
+                .WithMany(p => p.VisitorVisits)
+                .HasForeignKey(d => d.VisitorRequestId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_VisitorVisit_VisitorRequest");
+
+            entity.HasOne(d => d.CheckInSecurityUser)
+                .WithMany()
+                .HasForeignKey(d => d.CheckInSecurityUserId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_VisitorVisit_CheckInSecurity");
+
+            entity.HasOne(d => d.CheckOutSecurityUser)
+                .WithMany()
+                .HasForeignKey(d => d.CheckOutSecurityUserId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_VisitorVisit_CheckOutSecurity");
+
+            entity.HasOne(d => d.Status)
+                .WithMany()
+                .HasForeignKey(d => d.StatusId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_VisitorVisit_Status");
         });
 
         modelBuilder.Entity<SocietyMaster>(entity =>

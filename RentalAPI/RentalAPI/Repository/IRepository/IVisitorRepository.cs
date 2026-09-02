@@ -1,22 +1,42 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using RentalAPI.DTO;
 
 namespace RentalAPI.Repository.IRepository;
 
 public interface IVisitorRepository
 {
-    Task<VisitorRequestDto> CreateAsync(CreateVisitorRequestDto dto);
+    Task<PlannedVisitorResponseDto> CreatePlannedAsync(int currentUserId, CreatePlannedVisitorRequestDto dto);
 
-    Task<List<VisitorRequestDto>> GetGateRequestsAsync(int securityId);
+    Task<VisitorRequestResponseDto> CreateUnplannedAsync(int currentUserId, CreateUnplannedVisitorRequestDto dto, string? photoUrl);
 
-    Task<List<VisitorRequestDto>> GetGateRequestHistoryAsync(int securityId);
+    Task<VisitorRequestResponseDto?> ApproveUnplannedAsync(int currentUserId, int requestId);
 
-    Task<List<VisitorRequestDto>> GetResidentRequestsAsync(int residentId);
+    Task<VisitorRequestResponseDto?> RejectUnplannedAsync(int currentUserId, int requestId);
 
-    Task<VisitorRequestDto?> ApproveAsync(int requestId, int residentId);
+    Task<VisitorRequestResponseDto?> CancelPlannedAsync(int currentUserId, int requestId);
 
-    Task<VisitorRequestDto?> RejectAsync(int requestId, int residentId);
+    Task<bool> VerifyOtpAsync(int currentUserId, VerifyOtpDto dto);
 
-    Task<VisitorRequestDto?> AcknowledgeAsync(int requestId, int securityId);
+    Task<VisitorVisitResponseDto> CheckInAsync(int currentUserId, CheckInDto dto);
 
-    Task<(object? Data, string? ErrorMessage)> LookupResidentAsync(string wing, int flatNo);
+    Task<VisitorVisitResponseDto> CheckOutAsync(int currentUserId, CheckOutDto dto);
+
+    Task<List<VisitorRequestResponseDto>> GetResidentRequestsAsync(int currentUserId);
+
+    Task<List<VisitorRequestResponseDto>> GetGateRequestsAsync(int currentUserId);
+
+    Task<List<VisitorRequestResponseDto>> GetCurrentlyInsideAsync(int currentUserId);
+
+    Task<List<VisitorRequestResponseDto>> GetSocietyHistoryAsync(int currentUserId);
+
+    Task<List<WingDto>> GetSocietyWingsAsync(int currentUserId);
+
+    Task<List<FloorDto>> GetSocietyFloorsAsync(int currentUserId, int wingId);
+
+    Task<List<FlatDto>> GetSocietyFlatsAsync(int currentUserId, int wingId, int floorId);
+
+    Task<(object? Data, string? ErrorMessage)> LookupResidentAsync(int currentUserId, string? wing, int? flatNo);
+
+    Task<(object? Data, string? ErrorMessage)> LookupResidentByFlatConfigAsync(int currentUserId, int wingId, int floorId, int flatId);
 }

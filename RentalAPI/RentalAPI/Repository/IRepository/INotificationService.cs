@@ -1,4 +1,5 @@
-﻿using RentalAPI.Models;
+using System.Threading.Tasks;
+using RentalAPI.Models;
 
 namespace RentalAPI.Services
 {
@@ -6,5 +7,6 @@ namespace RentalAPI.Services
     {
         Task CreateResidentRegistrationNotification(Resident resident);
 
+        Task CreateUnplannedVisitorNotification(VisitorRequest request);
     }
-}   
+}

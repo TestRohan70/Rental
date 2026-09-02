@@ -44,5 +44,30 @@ namespace RentalAPI.Services
             await _context.Notifications.AddRangeAsync(notifications);
             await _context.SaveChangesAsync();
         }
+
+        public async Task CreateUnplannedVisitorNotification(VisitorRequest request)
+        {
+            var resident = await _context.Residents
+                .Include(r => r.User)
+                .FirstOrDefaultAsync(r => r.Id == request.ResidentId);
+
+            if (resident == null || !resident.UserId.HasValue)
+            {
+                return;
+            }
+
+            var notification = new Notification
+            {
+                UserId = resident.UserId.Value,
+                ResidentId = resident.Id,
+                Title = "Unplanned Visitor Approval Required",
+                Message = $"Visitor {request.VisitorName} has arrived at the gate for purpose: {request.Purpose ?? "General"}. Please approve or reject.",
+                IsRead = false,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            await _context.Notifications.AddAsync(notification);
+            await _context.SaveChangesAsync();
+        }
     }
 }
