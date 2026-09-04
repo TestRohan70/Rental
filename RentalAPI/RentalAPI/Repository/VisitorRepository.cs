@@ -118,6 +118,8 @@ public class VisitorRepository : IVisitorRepository
         await _context.VisitorRequests.AddAsync(request);
         await _context.SaveChangesAsync();
 
+        await _notificationService.CreatePlannedVisitorCreatedNotification(request);
+
         return new PlannedVisitorResponseDto
         {
             Message = "Planned visitor pass created successfully",
@@ -234,6 +236,8 @@ public class VisitorRepository : IVisitorRepository
 
         await _context.SaveChangesAsync();
 
+        await _notificationService.CreateUnplannedVisitorApprovedNotification(request);
+
         return await MapToResponseDtoAsync(request);
     }
 
@@ -264,6 +268,8 @@ public class VisitorRepository : IVisitorRepository
         request.RespondedDate = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        await _notificationService.CreateUnplannedVisitorRejectedNotification(request);
 
         return await MapToResponseDtoAsync(request);
     }
@@ -432,6 +438,8 @@ public class VisitorRepository : IVisitorRepository
         await _context.VisitorVisits.AddAsync(visit);
         await _context.SaveChangesAsync();
 
+        await _notificationService.CreateVisitorCheckedInNotification(request);
+
         var wing = request.Wing ?? request.SocietyWingFlatConfig?.Wing?.Name;
         var flat = request.FlatNo?.ToString() ?? request.SocietyWingFlatConfig?.Flat?.Code;
 
@@ -492,6 +500,8 @@ public class VisitorRepository : IVisitorRepository
         request.StatusId = checkedOutStatus.Id;
 
         await _context.SaveChangesAsync();
+
+        await _notificationService.CreateVisitorCheckedOutNotification(request);
 
         var wing = request.Wing ?? request.SocietyWingFlatConfig?.Wing?.Name;
         var flat = request.FlatNo?.ToString() ?? request.SocietyWingFlatConfig?.Flat?.Code;

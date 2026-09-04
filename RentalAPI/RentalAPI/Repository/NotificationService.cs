@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using RentalAPI.Constants;
 using RentalAPI.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -48,26 +49,103 @@ namespace RentalAPI.Services
         public async Task CreateUnplannedVisitorNotification(VisitorRequest request)
         {
             var resident = await _context.Residents
-                .Include(r => r.User)
+                .AsNoTracking()
                 .FirstOrDefaultAsync(r => r.Id == request.ResidentId);
 
-            if (resident == null || !resident.UserId.HasValue)
+            if (resident?.UserId != null)
             {
-                return;
+                await _context.Notifications.AddAsync(new Notification
+                {
+                    UserId = resident.UserId.Value,
+                    ResidentId = resident.Id,
+                    Title = "New Visitor Request",
+                    Message = $"Visitor {request.VisitorName} is waiting for your approval at the gate for Wing {request.Wing}, Flat {request.FlatNo}.",
+                    IsRead = false,
+                    CreatedDate = DateTime.UtcNow
+                });
+                await _context.SaveChangesAsync();
             }
+        }
 
-            var notification = new Notification
+        public async Task CreateUnplannedVisitorApprovedNotification(VisitorRequest request)
+        {
+            if (request.SecurityUserId.HasValue)
             {
-                UserId = resident.UserId.Value,
-                ResidentId = resident.Id,
-                Title = "Unplanned Visitor Approval Required",
-                Message = $"Visitor {request.VisitorName} has arrived at the gate for purpose: {request.Purpose ?? "General"}. Please approve or reject.",
-                IsRead = false,
-                CreatedDate = DateTime.UtcNow
-            };
+                await _context.Notifications.AddAsync(new Notification
+                {
+                    UserId = request.SecurityUserId.Value,
+                    ResidentId = request.ResidentId,
+                    Title = "Visitor Request Approved",
+                    Message = $"Resident approved visitor {request.VisitorName} for Wing {request.Wing}, Flat {request.FlatNo}.",
+                    IsRead = false,
+                    CreatedDate = DateTime.UtcNow
+                });
+                await _context.SaveChangesAsync();
+            }
+        }
 
-            await _context.Notifications.AddAsync(notification);
-            await _context.SaveChangesAsync();
+        public async Task CreateUnplannedVisitorRejectedNotification(VisitorRequest request)
+        {
+            if (request.SecurityUserId.HasValue)
+            {
+                await _context.Notifications.AddAsync(new Notification
+                {
+                    UserId = request.SecurityUserId.Value,
+                    ResidentId = request.ResidentId,
+                    Title = "Visitor Request Rejected",
+                    Message = $"Resident rejected the visitor request for {request.VisitorName} (Wing {request.Wing}, Flat {request.FlatNo}).",
+                    IsRead = false,
+                    CreatedDate = DateTime.UtcNow
+                });
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task CreatePlannedVisitorCreatedNotification(VisitorRequest request)
+        {
+            await Task.CompletedTask;
+        }
+
+        public async Task CreateVisitorCheckedInNotification(VisitorRequest request)
+        {
+            var resident = await _context.Residents
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == request.ResidentId);
+
+            if (resident?.UserId != null)
+            {
+                await _context.Notifications.AddAsync(new Notification
+                {
+                    UserId = resident.UserId.Value,
+                    ResidentId = resident.Id,
+                    Title = "Visitor Checked In",
+                    Message = $"Visitor {request.VisitorName} has checked in at the gate.",
+                    IsRead = false,
+                    CreatedDate = DateTime.UtcNow
+                });
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task CreateVisitorCheckedOutNotification(VisitorRequest request)
+        {
+            var resident = await _context.Residents
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == request.ResidentId);
+
+            if (resident?.UserId != null)
+            {
+                await _context.Notifications.AddAsync(new Notification
+                {
+                    UserId = resident.UserId.Value,
+                    ResidentId = resident.Id,
+                    Title = "Visitor Checked Out",
+                    Message = $"Visitor {request.VisitorName} has checked out.",
+                    IsRead = false,
+                    CreatedDate = DateTime.UtcNow
+                });
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }
