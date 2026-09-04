@@ -80,6 +80,25 @@ public class AuthController : ControllerBase
             societyId = userMapping?.SocietyId;
         }
 
+        if (roleCode == "RESIDENT")
+        {
+            if (user.Resident == null)
+            {
+                return Unauthorized(new
+                {
+                    Message = "Resident profile not found."
+                });
+            }
+
+            if (user.Resident.Status == "Pending")
+            {
+                return Unauthorized(new
+                {
+                    Message = "Your account is pending For approval."
+                });
+            }
+        }
+
         int? residentId = user.Resident?.Id;
 
         var token = _jwt.GenerateToken(user, roleCode, societyId);
