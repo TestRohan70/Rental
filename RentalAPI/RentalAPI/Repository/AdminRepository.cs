@@ -21,13 +21,14 @@ namespace RentalAPI.Repository
             _logger = logger;
         }
 
-        public async Task<List<Resident>> GetPendingResidents()
+        public async Task<List<Resident>> GetPendingResidents(int societyId)
         {
             return await _context.Residents
                 .Include(r => r.User)
                 .Include(r => r.FlatMappings)
                     .ThenInclude(fm => fm.SocietyWingFlatConfig)
-                .Where(x => x.Status == "Pending")
+                .Where(x => x.Status == "Pending" &&
+                            x.FlatMappings.Any(fm => fm.SocietyWingFlatConfig.SocietyId == societyId))
                 .ToListAsync();
         }
 

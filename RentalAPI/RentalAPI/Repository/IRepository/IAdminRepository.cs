@@ -11,7 +11,7 @@ namespace RentalAPI.Repository.IRepository
 
         Task<bool> RejectResident(int residentId);
 
-        Task<List<Resident>> GetPendingResidents();
+        Task<List<Resident>> GetPendingResidents(int societyId);
 
         Task<bool> IsAdmin(int adminId);
 

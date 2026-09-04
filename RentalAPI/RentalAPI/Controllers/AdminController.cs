@@ -26,7 +26,12 @@ public class AdminController : ControllerBase
     [HttpGet("pendingResidents")]
     public async Task<IActionResult> GetPendingResidents()
     {
-        var residents = await _adminRepository.GetPendingResidents();
+        var societyIdClaim = User.FindFirst("SocietyId")?.Value;
+        if (!int.TryParse(societyIdClaim, out var societyId))
+        {
+            return Unauthorized(new { Message = "SocietyId not found in token." });
+        }
+        var residents = await _adminRepository.GetPendingResidents(societyId);
         return Ok(residents);
     }
 
