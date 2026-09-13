@@ -31,4 +31,11 @@ public interface ISocietyConfigurationRepository
     Task DeactivateFlatAsync(int societyId, int wingId, int floorId, int flatId, CancellationToken cancellationToken = default);
 
     Task<GenerateStructurePreviewDto> GenerateStructureAsync(int societyId, GenerateSocietyStructureDto dto, CancellationToken cancellationToken = default);
+
+    // Wing Master CRUD
+    Task<List<WingListDto>> GetAllWingsAsync(string? search, bool? isActive, CancellationToken cancellationToken = default);
+    Task<WingListDto?> GetWingByIdAsync(int id, CancellationToken cancellationToken = default);
+    Task<WingListDto> CreateWingAsync(CreateWingDto dto, CancellationToken cancellationToken = default);
+    Task<WingListDto> UpdateWingAsync(int id, UpdateWingDto dto, CancellationToken cancellationToken = default);
+    Task DeleteWingAsync(int id, CancellationToken cancellationToken = default);
 }

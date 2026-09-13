@@ -205,4 +205,47 @@ public class PAdminController : ControllerBase
             return BadRequest(new { message });
         }
     }
+
+    // ──────────────── Wing Master CRUD ────────────────
+
+    [HttpGet("wings")]
+    public async Task<IActionResult> GetAllWings(
+        [FromQuery] string? search,
+        [FromQuery] bool? isActive,
+        CancellationToken cancellationToken)
+    {
+        var data = await _repository.GetAllWingsAsync(search, isActive, cancellationToken);
+        return Ok(data);
+    }
+
+    [HttpGet("wings/{id:int}")]
+    public async Task<IActionResult> GetWing(int id, CancellationToken cancellationToken)
+    {
+        var data = await _repository.GetWingByIdAsync(id, cancellationToken);
+        return data is null ? NotFound(new { message = "Wing not found." }) : Ok(data);
+    }
+
+    [HttpPost("wings")]
+    public async Task<IActionResult> CreateWing([FromBody] CreateWingDto dto, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        return await ExecuteAsync(() => _repository.CreateWingAsync(dto, cancellationToken));
+    }
+
+    [HttpPut("wings/{id:int}")]
+    public async Task<IActionResult> UpdateWing(int id, [FromBody] UpdateWingDto dto, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        return await ExecuteAsync(() => _repository.UpdateWingAsync(id, dto, cancellationToken));
+    }
+
+    [HttpDelete("wings/{id:int}")]
+    public async Task<IActionResult> DeleteWing(int id, CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            await _repository.DeleteWingAsync(id, cancellationToken);
+            return Ok(new { message = "Wing deactivated successfully." });
+        });
+    }
 }

@@ -110,3 +110,37 @@ public class GenerateStructurePreviewDto
     public int SkippedDuplicates { get; set; }
     public List<SocietyWingNodeDto> Preview { get; set; } = [];
 }
+
+public class WingListDto
+{
+    public int Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+}
+
+public class CreateWingDto
+{
+    [Required]
+    [MaxLength(20)]
+    public string Code { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    public bool IsActive { get; set; } = true;
+}
+
+public class UpdateWingDto
+{
+    [Required]
+    [MaxLength(20)]
+    public string Code { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    public bool IsActive { get; set; } = true;
+}

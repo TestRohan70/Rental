@@ -711,4 +711,97 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
         var next = (await _context.SocietyMasters.MaxAsync(x => (int?)x.Id, cancellationToken) ?? 0) + 1;
         return $"SOC{next:D3}";
     }
+
+    // ────────────── Wing Master CRUD ──────────────
+
+    public async Task<List<WingListDto>> GetAllWingsAsync(string? search, bool? isActive, CancellationToken cancellationToken = default)
+    {
+        var query = _context.WingMasters.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLower();
+            query = query.Where(x => x.Code.ToLower().Contains(term) || x.Name.ToLower().Contains(term));
+        }
+
+        if (isActive.HasValue)
+        {
+            query = query.Where(x => x.IsActive == isActive.Value);
+        }
+
+        return await query
+            .OrderBy(x => x.Name)
+            .Select(x => new WingListDto { Id = x.Id, Code = x.Code, Name = x.Name, IsActive = x.IsActive })
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<WingListDto?> GetWingByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var wing = await _context.WingMasters.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (wing is null) return null;
+        return new WingListDto { Id = wing.Id, Code = wing.Code, Name = wing.Name, IsActive = wing.IsActive };
+    }
+
+    public async Task<WingListDto> CreateWingAsync(CreateWingDto dto, CancellationToken cancellationToken = default)
+    {
+        var code = dto.Code.Trim();
+        var name = dto.Name.Trim();
+
+        if (string.IsNullOrWhiteSpace(code)) throw new InvalidOperationException("Wing Code is required.");
+        if (string.IsNullOrWhiteSpace(name)) throw new InvalidOperationException("Wing Name is required.");
+
+        if (await _context.WingMasters.AnyAsync(x => x.Code.ToLower() == code.ToLower(), cancellationToken))
+            throw new InvalidOperationException("A wing with this code already exists.");
+
+        if (await _context.WingMasters.AnyAsync(x => x.Name.ToLower() == name.ToLower() && x.IsActive, cancellationToken))
+            throw new InvalidOperationException("An active wing with this name already exists.");
+
+        var wing = new WingMaster { Code = code, Name = name, IsActive = dto.IsActive };
+        await _context.WingMasters.AddAsync(wing, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return new WingListDto { Id = wing.Id, Code = wing.Code, Name = wing.Name, IsActive = wing.IsActive };
+    }
+
+    public async Task<WingListDto> UpdateWingAsync(int id, UpdateWingDto dto, CancellationToken cancellationToken = default)
+    {
+        var wing = await _context.WingMasters.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw new KeyNotFoundException("Wing not found.");
+
+        var code = dto.Code.Trim();
+        var name = dto.Name.Trim();
+
+        if (string.IsNullOrWhiteSpace(code)) throw new InvalidOperationException("Wing Code is required.");
+        if (string.IsNullOrWhiteSpace(name)) throw new InvalidOperationException("Wing Name is required.");
+
+        if (await _context.WingMasters.AnyAsync(x => x.Id != id && x.Code.ToLower() == code.ToLower(), cancellationToken))
+            throw new InvalidOperationException("A wing with this code already exists.");
+
+        if (await _context.WingMasters.AnyAsync(x => x.Id != id && x.Name.ToLower() == name.ToLower() && x.IsActive, cancellationToken))
+            throw new InvalidOperationException("An active wing with this name already exists.");
+
+        wing.Code = code;
+        wing.Name = name;
+        wing.IsActive = dto.IsActive;
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return new WingListDto { Id = wing.Id, Code = wing.Code, Name = wing.Name, IsActive = wing.IsActive };
+    }
+
+    public async Task DeleteWingAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var wing = await _context.WingMasters.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw new KeyNotFoundException("Wing not found.");
+
+        // Check if wing is referenced by any active society configuration
+        var hasConfig = await _context.PmSocietyWingFlatConfigs
+            .AnyAsync(x => x.WingId == id && x.IsActive, cancellationToken);
+
+        if (hasConfig)
+            throw new InvalidOperationException("Cannot delete this wing because it is used in an active society configuration.");
+
+        // Soft delete: set IsActive = false
+        wing.IsActive = false;
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }
