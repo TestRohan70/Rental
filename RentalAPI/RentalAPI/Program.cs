@@ -22,7 +22,25 @@ builder.Services.AddControllers()
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+
+var databaseProvider = builder.Configuration["DatabaseProvider"];
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    if (databaseProvider == "PostgreSQL")
+    {
+        options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSqlConnection"));
+
+    }
+    else
+    {
+        options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerConnection"));
+
+    }
+});
+
+//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // JWT Authentication
 builder.Services.AddJwtAuthentication(builder.Configuration);
@@ -69,11 +87,6 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
-
-
-
-
-
 
     app.UseSwagger();
 
