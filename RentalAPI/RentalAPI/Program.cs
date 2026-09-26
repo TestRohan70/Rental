@@ -87,8 +87,24 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    app.UseSwagger();
+    try
+    {
+        await db.Database.OpenConnectionAsync();
+        await db.Database.CloseConnectionAsync();
+
+        Console.WriteLine("Database connection warmed up successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database connection failed: {ex.Message}");
+    }
+}
+
+app.UseSwagger();
 
     app.UseSwaggerUI();
 
