@@ -40,6 +40,17 @@ public class PAdminController : ControllerBase
         var data = await _repository.GetActiveFloorsAsync(wingId, cancellationToken);
         return Ok(data);
     }
+    [HttpPost("masters/floors")]
+    public async Task<IActionResult> CreateFloor(
+    [FromBody] CreateFloorDto dto,
+    CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        return await ExecuteAsync(
+            () => _repository.CreateFloorAsync(dto, cancellationToken));
+    }
 
     [HttpGet("masters/flats")]
     public async Task<IActionResult> GetFlats(CancellationToken cancellationToken)
@@ -207,17 +218,21 @@ public class PAdminController : ControllerBase
     }
 
     // ──────────────── Wing Master CRUD ────────────────
-
     [HttpGet("wings")]
     public async Task<IActionResult> GetAllWings(
-        [FromQuery] string? search,
-        [FromQuery] bool? isActive,
-        CancellationToken cancellationToken)
+       [FromQuery] int societyId,
+       [FromQuery] string? search,
+       [FromQuery] bool? isActive,
+       CancellationToken cancellationToken)
     {
-        var data = await _repository.GetAllWingsAsync(search, isActive, cancellationToken);
+        var data = await _repository.GetAllWingsAsync(
+            societyId,
+            search,
+            isActive,
+            cancellationToken);
+
         return Ok(data);
     }
-
     [HttpGet("wings/{id:int}")]
     public async Task<IActionResult> GetWing(int id, CancellationToken cancellationToken)
     {

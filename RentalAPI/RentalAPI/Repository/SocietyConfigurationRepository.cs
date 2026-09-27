@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RentalAPI.DTO;
 using RentalAPI.DTO.PAdmin;
 using RentalAPI.Models;
 using RentalAPI.Repository.IRepository;
@@ -714,14 +715,26 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
 
     // ────────────── Wing Master CRUD ──────────────
 
-    public async Task<List<WingListDto>> GetAllWingsAsync(string? search, bool? isActive, CancellationToken cancellationToken = default)
+    public async Task<List<WingListDto>> GetAllWingsAsync(
+        int societyId,
+        string? search,
+        bool? isActive,
+        CancellationToken cancellationToken = default)
     {
-        var query = _context.WingMasters.AsNoTracking().AsQueryable();
+        var query = _context.WingMasters
+            .AsNoTracking()
+            .AsQueryable();
+
+        // Society-wise filter
+        query = query.Where(x => x.SocietyID == societyId);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim().ToLower();
-            query = query.Where(x => x.Code.ToLower().Contains(term) || x.Name.ToLower().Contains(term));
+
+            query = query.Where(x =>
+                x.Code.ToLower().Contains(term) ||
+                x.Name.ToLower().Contains(term));
         }
 
         if (isActive.HasValue)
@@ -731,10 +744,16 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
 
         return await query
             .OrderBy(x => x.Name)
-            .Select(x => new WingListDto { Id = x.Id, Code = x.Code, Name = x.Name, IsActive = x.IsActive })
+            .Select(x => new WingListDto
+            {
+                Id = x.Id,
+                SocietyID = x.SocietyID,
+                Code = x.Code,
+                Name = x.Name,
+                IsActive = x.IsActive
+            })
             .ToListAsync(cancellationToken);
     }
-
     public async Task<WingListDto?> GetWingByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var wing = await _context.WingMasters.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
@@ -756,12 +775,66 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
         if (await _context.WingMasters.AnyAsync(x => x.Name.ToLower() == name.ToLower() && x.IsActive, cancellationToken))
             throw new InvalidOperationException("An active wing with this name already exists.");
 
-        var wing = new WingMaster { Code = code, Name = name, IsActive = dto.IsActive };
+        var wing = new WingMaster { SocietyID = dto.SocietyID, Code = code, Name = name, IsActive = dto.IsActive };
         await _context.WingMasters.AddAsync(wing, cancellationToken);
+        Console.WriteLine($"DTO SocietyID = {dto.SocietyID}");
+        Console.WriteLine($"Wing SocietyID = {wing.SocietyID}");
         await _context.SaveChangesAsync(cancellationToken);
 
         return new WingListDto { Id = wing.Id, Code = wing.Code, Name = wing.Name, IsActive = wing.IsActive };
     }
+
+    public async Task<FloorListDto> CreateFloorAsync(
+    CreateFloorDto dto,
+    CancellationToken cancellationToken = default)
+    {
+        if (dto.SocietyId <= 0)
+            throw new InvalidOperationException("Society is required.");
+
+        if (dto.WingId <= 0)
+            throw new InvalidOperationException("Wing is required.");
+
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new InvalidOperationException("Floor name is required.");
+
+        var wingExists = await _context.WingMasters
+            .AnyAsync(
+                x => x.Id == dto.WingId &&
+                     x.SocietyID == dto.SocietyId &&
+                     x.IsActive,
+                cancellationToken);
+
+        if (!wingExists)
+            throw new InvalidOperationException(
+                "Selected wing does not belong to the selected society.");
+
+        var floor = new FloorMaster
+        {
+            SocietyID = dto.SocietyId,
+            WingID = dto.WingId,
+            Name = dto.Name.Trim(),
+            FloorNumber = dto.FloorNumber,
+            IsActive = dto.IsActive
+        };
+
+        await _context.FloorMasters.AddAsync(floor, cancellationToken);
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return new FloorListDto
+        {
+            Id = floor.Id,
+            SocietyID = floor.SocietyID,
+            WingID = floor.WingID,
+            Name = floor.Name,
+            FloorNumber = floor.FloorNumber,
+            IsActive = floor.IsActive
+        };
+    }
+
+
+
+
 
     public async Task<WingListDto> UpdateWingAsync(int id, UpdateWingDto dto, CancellationToken cancellationToken = default)
     {

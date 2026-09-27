@@ -117,10 +117,14 @@ public class WingListDto
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public bool IsActive { get; set; }
+    public  int  SocietyID { get; set; }
 }
 
 public class CreateWingDto
 {
+    [Required]
+    public int SocietyID { get; set; }
+
     [Required]
     [MaxLength(20)]
     public string Code { get; set; } = string.Empty;

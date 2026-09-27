@@ -1,3 +1,4 @@
+using RentalAPI.DTO;
 using RentalAPI.DTO.PAdmin;
 
 namespace RentalAPI.Repository.IRepository;
@@ -33,9 +34,17 @@ public interface ISocietyConfigurationRepository
     Task<GenerateStructurePreviewDto> GenerateStructureAsync(int societyId, GenerateSocietyStructureDto dto, CancellationToken cancellationToken = default);
 
     // Wing Master CRUD
-    Task<List<WingListDto>> GetAllWingsAsync(string? search, bool? isActive, CancellationToken cancellationToken = default);
+    Task<List<WingListDto>> GetAllWingsAsync(
+      int societyId,
+      string? search,
+      bool? isActive,
+      CancellationToken cancellationToken = default);
+
     Task<WingListDto?> GetWingByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<WingListDto> CreateWingAsync(CreateWingDto dto, CancellationToken cancellationToken = default);
+    Task<FloorListDto> CreateFloorAsync(
+    CreateFloorDto dto,
+    CancellationToken cancellationToken = default);
     Task<WingListDto> UpdateWingAsync(int id, UpdateWingDto dto, CancellationToken cancellationToken = default);
     Task DeleteWingAsync(int id, CancellationToken cancellationToken = default);
 }

@@ -300,12 +300,25 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Location).HasMaxLength(100);
         });
 
+
         modelBuilder.Entity<WingMaster>(entity =>
         {
             entity.ToTable("wings");
-            entity.Property(e => e.Id).HasColumnName("ID");
-            entity.Property(e => e.Code).HasMaxLength(100);
-            entity.Property(e => e.Name).HasMaxLength(100);
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("ID");
+
+            entity.Property(e => e.Code)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Name)
+                .HasMaxLength(100);
+
+            entity.Property(e => e.SocietyID)
+                .HasColumnName("SocietyID")
+                .IsRequired();
         });
 
         modelBuilder.Entity<FloorMaster>(entity =>

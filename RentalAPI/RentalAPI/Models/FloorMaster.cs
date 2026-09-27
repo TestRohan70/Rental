@@ -8,7 +8,11 @@ public class FloorMaster
     [Column("ID")]
     public int Id { get; set; }
 
-    public string Code { get; set; } = null!;
+    public int SocietyID { get; set; }
+
+    public int WingID { get; set; }
+
+    public string? Code { get; set; } = null!;
 
     public string Name { get; set; } = null!;
 
