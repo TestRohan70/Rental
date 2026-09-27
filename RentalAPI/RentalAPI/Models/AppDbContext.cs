@@ -46,7 +46,7 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<PmWingFloorConfig> PmWingFloorConfigs { get; set; }
 
     public virtual DbSet<PmSocietyWingFlatConfig> PmSocietyWingFlatConfigs { get; set; }
-
+public virtual DbSet<PmAccount> PmAccounts { get; set; }
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
@@ -361,6 +361,14 @@ public partial class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(d => d.FlatId)
                 .HasConstraintName("FK_SocietyWingFlatConfig_Flat");
+        });
+
+
+        modelBuilder.Entity<PmAccount>(entity =>
+        {
+            entity.ToTable("PmAccount");
+
+            entity.HasKey(x => x.ID);
         });
 
         OnModelCreatingPartial(modelBuilder);
