@@ -192,18 +192,9 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
                 .ToListAsync(cancellationToken);
         }
 
-        var linkedFloorIds = await _context.PmWingFloorConfigs
-            .AsNoTracking()
-            .Where(x => x.WingId == wingId)
-            .Select(x => x.FloorId)
-            .ToListAsync(cancellationToken);
-
-        var query = _context.FloorMasters.AsNoTracking().Where(x => x.IsActive);
-
-        if (linkedFloorIds.Count > 0)
-        {
-            query = query.Where(x => linkedFloorIds.Contains(x.Id));
-        }
+        var query = _context.FloorMasters
+      .AsNoTracking()
+      .Where(x => x.IsActive && x.WingID == wingId.Value);
 
         return await query
             .OrderBy(x => x.FloorNumber)
