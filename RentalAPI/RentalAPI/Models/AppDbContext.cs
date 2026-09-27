@@ -46,7 +46,9 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<PmWingFloorConfig> PmWingFloorConfigs { get; set; }
 
     public virtual DbSet<PmSocietyWingFlatConfig> PmSocietyWingFlatConfigs { get; set; }
-public virtual DbSet<PmAccount> PmAccounts { get; set; }
+    public virtual DbSet<PmAccount> PmAccounts { get; set; }
+    public virtual DbSet<PmAdminAccount> PmAdminAccounts { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
@@ -169,6 +171,32 @@ public virtual DbSet<PmAccount> PmAccounts { get; set; }
                 .WithMany(p => p.Notifications)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+
+        modelBuilder.Entity<PmAdminAccount>(entity =>
+        {
+            entity.ToTable("PmAdminAccounts");
+
+            entity.HasKey(x => x.ID);
+
+            entity.Property(x => x.Name)
+                .HasMaxLength(150);
+
+            entity.Property(x => x.Email)
+                .HasMaxLength(255);
+
+            entity.Property(x => x.Phone)
+                .HasMaxLength(20);
+
+            entity.Property(x => x.Username)
+                .HasMaxLength(100);
+
+            entity.Property(x => x.IsActive)
+                .HasDefaultValue(true);
+
+            entity.Property(x => x.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         modelBuilder.Entity<VisitorRequest>(entity =>

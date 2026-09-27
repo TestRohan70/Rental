@@ -6,6 +6,7 @@ using RentalAPI.Models;
 using RentalAPI.Repository;
 using RentalAPI.Repository.IRepository;
 using RentalAPI.Services;
+using RentalAPI.Services.IServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -53,6 +54,12 @@ builder.Services.AddScoped<ISocietyAlertRepository, SocietyAlertRepository>();
 builder.Services.AddScoped<ISocietyConfigurationRepository, SocietyConfigurationRepository>();
 builder.Services.AddScoped<IPmAccountService, PmAccountService>();
 builder.Services.AddScoped<IPmAccountRepository, PmAccountRepository>();
+builder.Services.AddScoped<IPmAdminAccountRepository,PmAdminAccountRepository>();
+builder.Services.AddScoped<IPmAdminAccountService,PmAdminAccountService>();
+
+
+
+
 
 builder.Services.AddScoped<JwtService>();
 
