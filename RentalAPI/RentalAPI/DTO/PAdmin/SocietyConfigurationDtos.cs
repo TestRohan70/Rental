@@ -41,6 +41,8 @@ public class WingResponseDto
 public class FloorResponseDto
 {
     public int Id { get; set; }
+    public int SocietyID { get; set; }
+    public int WingID { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public int FloorNumber { get; set; }
@@ -52,7 +54,27 @@ public class FlatResponseDto
 {
     public int Id { get; set; }
     public string Code { get; set; } = string.Empty;
+    public string? FlatNumber { get; set; }
     public int? TypeId { get; set; }
+    public string? TypeName { get; set; }
+    public int FlatTypeId => TypeId ?? Id;
+    public string FlatTypeName => TypeName ?? Code;
+    public bool IsActive { get; set; }
+}
+
+public class SocietyFlatConfigResponseDto
+{
+    public int Id { get; set; }
+    public int FlatId { get; set; }
+    public int SocietyId { get; set; }
+    public int WingId { get; set; }
+    public string WingCode { get; set; } = string.Empty;
+    public string WingName { get; set; } = string.Empty;
+    public int FloorId { get; set; }
+    public string FloorName { get; set; } = string.Empty;
+    public int FloorNumber { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public int TypeId { get; set; }
     public string? TypeName { get; set; }
     public bool IsActive { get; set; }
 }
@@ -65,8 +87,11 @@ public class CreateSocietyMappingDto
     [Required]
     public int FloorId { get; set; }
 
-    [Required]
-    public int FlatId { get; set; }
+    public int? FlatTypeId { get; set; }
+    public int? FlatId { get; set; }
+    public string? FlatNumber { get; set; }
+
+    public int ResolvedFlatTypeId => (FlatTypeId is > 0 ? FlatTypeId.Value : (FlatId ?? 0));
 }
 
 public class SocietyStructureDto
@@ -95,8 +120,10 @@ public class GenerateSocietyStructureDto
     [MinLength(1)]
     public List<int> FloorIds { get; set; } = [];
 
-    [MinLength(1)]
+    public List<int> FlatTypeIds { get; set; } = [];
     public List<int> FlatIds { get; set; } = [];
+
+    public List<int> ResolvedFlatTypeIds => (FlatTypeIds != null && FlatTypeIds.Count > 0) ? FlatTypeIds : (FlatIds ?? []);
 
     public bool PreviewOnly { get; set; }
 }

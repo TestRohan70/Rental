@@ -17,8 +17,14 @@ public class PmSocietyWingFlatConfig
     [Column("FloorID")]
     public int FloorId { get; set; }
 
+    [Column("FlatTypeID")]
+    public int FlatTypeId { get; set; }
+
     [Column("FlatID")]
-    public int FlatId { get; set; }
+    public int FlatID { get; set; }
+
+    [Column("FlatNumber")]
+    public string? FlatNumber { get; set; }
 
     public bool IsActive { get; set; } = true;
 
@@ -28,5 +34,5 @@ public class PmSocietyWingFlatConfig
 
     public virtual FloorMaster Floor { get; set; } = null!;
 
-    public virtual FlatMaster Flat { get; set; } = null!;
+    public virtual FlatCategoryMaster FlatType { get; set; } = null!;
 }

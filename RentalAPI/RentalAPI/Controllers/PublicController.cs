@@ -79,15 +79,18 @@ public class PublicController : ControllerBase
             .AsNoTracking()
             .Include(c => c.Wing)
             .Include(c => c.Floor)
-            .Include(c => c.Flat)
+            .Include(c => c.FlatType)
             .Where(c => c.SocietyId == societyId && c.WingId == wingId && c.IsActive)
             .OrderBy(c => c.Floor != null ? c.Floor.Name : "")
-            .ThenBy(c => c.Flat != null ? c.Flat.Code : "")
+            //.ThenBy(c => c.FlatNumber ?? (c.FlatType != null ? c.FlatType.Type : ""))
             .Select(c => new
             {
                 societyWingFlatConfigId = c.Id,
-                flatId = c.FlatId,
-                flatCode = c.Flat != null ? c.Flat.Code : string.Empty,
+                flatId = c.Id,
+                flatTypeId = c.FlatTypeId,
+                //flatNumber = c.FlatNumber,
+                //flatCode = c.FlatNumber ?? (c.FlatType != null ? c.FlatType.Type : string.Empty),
+                flatTypeName = c.FlatType != null ? c.FlatType.Type : string.Empty,
                 floorId = c.FloorId,
                 floorName = c.Floor != null ? c.Floor.Name : string.Empty,
                 wingId = c.WingId,

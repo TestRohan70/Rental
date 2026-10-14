@@ -17,10 +17,14 @@ public interface ISocietyConfigurationRepository
 
     Task<SocietyStructureDto?> GetSocietyStructureAsync(int societyId, CancellationToken cancellationToken = default);
 
+    Task<List<SocietyFlatConfigResponseDto>> GetSocietyFlatsAsync(int societyId, CancellationToken cancellationToken = default);
+
     Task<List<WingResponseDto>> GetActiveWingsAsync(CancellationToken cancellationToken = default);
 
-    Task<List<FloorResponseDto>> GetActiveFloorsAsync(int? wingId, CancellationToken cancellationToken = default);
-
+    Task<List<FloorResponseDto>> GetActiveFloorsAsync(int societyId, CancellationToken cancellationToken = default);
+    Task<PmFlatConfigResponseDto> CreateFlatConfigAsync(
+    CreatePmFlatConfigDto dto,
+    CancellationToken cancellationToken = default);
     Task<List<FlatResponseDto>> GetActiveFlatsAsync(CancellationToken cancellationToken = default);
 
     Task<FlatResponseDto> AddMappingAsync(int societyId, CreateSocietyMappingDto dto, CancellationToken cancellationToken = default);
@@ -47,4 +51,7 @@ public interface ISocietyConfigurationRepository
     CancellationToken cancellationToken = default);
     Task<WingListDto> UpdateWingAsync(int id, UpdateWingDto dto, CancellationToken cancellationToken = default);
     Task DeleteWingAsync(int id, CancellationToken cancellationToken = default);
+    Task<PmFlatConfigResponseDto> CreateFlatAsync(
+    CreateFlatDto dto,
+    CancellationToken cancellationToken = default);
 }

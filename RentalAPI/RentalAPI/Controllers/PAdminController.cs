@@ -35,9 +35,12 @@ public class PAdminController : ControllerBase
     }
 
     [HttpGet("masters/floors")]
-    public async Task<IActionResult> GetFloors([FromQuery] int? wingId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetFloors([FromQuery] int societyId, CancellationToken cancellationToken)
     {
-        var data = await _repository.GetActiveFloorsAsync(wingId, cancellationToken);
+        if (societyId <= 0)
+            return BadRequest(new { message = "A valid societyId is required." });
+
+        var data = await _repository.GetActiveFloorsAsync(societyId, cancellationToken);
         return Ok(data);
     }
     [HttpPost("masters/floors")]
@@ -143,6 +146,16 @@ public class PAdminController : ControllerBase
     {
         var data = await _repository.GetSocietyStructureAsync(societyId, cancellationToken);
         return data is null ? NotFound(new { message = "Society not found." }) : Ok(data);
+    }
+
+    [HttpGet("societies/{societyId:int}/flats")]
+    public async Task<IActionResult> GetSocietyFlats(int societyId, CancellationToken cancellationToken)
+    {
+        if (societyId <= 0)
+            return BadRequest(new { message = "A valid societyId is required." });
+
+        var data = await _repository.GetSocietyFlatsAsync(societyId, cancellationToken);
+        return Ok(data);
     }
 
     [HttpPost("societies/{societyId:int}/mappings")]
@@ -262,5 +275,20 @@ public class PAdminController : ControllerBase
             await _repository.DeleteWingAsync(id, cancellationToken);
             return Ok(new { message = "Wing deactivated successfully." });
         });
+    }
+
+
+    [HttpPost("masters/flats")]
+    public async Task<IActionResult> CreateFlat(
+    [FromBody] CreateFlatDto dto,
+    CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        return await ExecuteAsync(
+            () => _repository.CreateFlatAsync(
+                dto,
+                cancellationToken));
     }
 }

@@ -48,6 +48,7 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<PmSocietyWingFlatConfig> PmSocietyWingFlatConfigs { get; set; }
     public virtual DbSet<PmAccount> PmAccounts { get; set; }
     public virtual DbSet<PmAdminAccount> PmAdminAccounts { get; set; }
+    public virtual DbSet<PmFlatConfig> PmFlatConfigs { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -69,6 +70,35 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Description).HasMaxLength(500);
 
             entity.HasIndex(e => e.Code, "UX_RoleMaster_Code").IsUnique();
+        });
+        modelBuilder.Entity<PmFlatConfig>(entity =>
+        {
+            entity.ToTable("pmFlatConfig");
+
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .HasColumnName("ID");
+
+            entity.Property(e => e.FlatNumber)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(e => e.FlatTypeID)
+                .HasColumnName("FlatTypeID")
+                .IsRequired();
+
+            entity.Property(e => e.IsActive)
+                .HasDefaultValue(true);
+
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(e => e.FlatType)
+                .WithMany()
+                .HasForeignKey(e => e.FlatTypeID)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("FK_pmFlatConfig_FlatCategory");
         });
 
         modelBuilder.Entity<SysmUser>(entity =>
@@ -377,11 +407,11 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.SocietyId).HasColumnName("SocietyID");
             entity.Property(e => e.WingId).HasColumnName("WingID");
             entity.Property(e => e.FloorId).HasColumnName("FloorID");
-            entity.Property(e => e.FlatId).HasColumnName("FlatID");
+            entity.Property(e => e.FlatTypeId).HasColumnName("FlatTypeID");
+            entity.Property(e => e.FlatNumber).HasColumnName("FlatNumber").HasMaxLength(50);
 
-            entity.HasIndex(e => new { e.SocietyId, e.WingId, e.FloorId, e.FlatId })
-                .IsUnique()
-                .HasDatabaseName("UQ_SocietyWingFlatConfig");
+            entity.HasIndex(e => new { e.SocietyId, e.WingId, e.FloorId, e.FlatTypeId })
+                .HasDatabaseName("IX_SocietyWingFlatConfig_FlatType");
 
             entity.HasOne(d => d.Society)
                 .WithMany()
@@ -398,10 +428,10 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(d => d.FloorId)
                 .HasConstraintName("FK_SocietyWingFlatConfig_Floor");
 
-            entity.HasOne(d => d.Flat)
+            entity.HasOne(d => d.FlatType)
                 .WithMany()
-                .HasForeignKey(d => d.FlatId)
-                .HasConstraintName("FK_SocietyWingFlatConfig_Flat");
+                .HasForeignKey(d => d.FlatTypeId)
+                .HasConstraintName("FK_SocietyWingFlatConfig_FlatType");
         });
 
 

@@ -146,7 +146,7 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
             .AsNoTracking()
             .Include(x => x.Wing)
             .Include(x => x.Floor)
-            .Include(x => x.Flat).ThenInclude(f => f.Type)
+            .Include(x => x.FlatType)
             .Where(x => x.SocietyId == societyId && x.IsActive)
             .ToListAsync(cancellationToken);
 
@@ -155,6 +155,35 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
             Society = society,
             Wings = BuildStructureTree(configs)
         };
+    }
+
+    public async Task<List<SocietyFlatConfigResponseDto>> GetSocietyFlatsAsync(
+        int societyId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.PmSocietyWingFlatConfigs
+            .AsNoTracking()
+            .Where(config => config.SocietyId == societyId && config.IsActive)
+            .OrderBy(config => config.WingId)
+            .ThenBy(config => config.FloorId)
+            .ThenBy(config => config.FlatNumber)
+            .Select(config => new SocietyFlatConfigResponseDto
+            {
+                Id = config.Id,
+                FlatId = config.FlatID,
+                SocietyId = config.SocietyId,
+                WingId = config.WingId,
+                WingCode = config.Wing.Code,
+                WingName = config.Wing.Name,
+                FloorId = config.FloorId,
+                FloorName = config.Floor.Name,
+                FloorNumber = config.Floor.FloorNumber,
+                Code = config.FlatNumber ?? string.Empty,
+                TypeId = config.FlatTypeId,
+                TypeName = config.FlatType.Type,
+                IsActive = config.IsActive
+            })
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<List<WingResponseDto>> GetActiveWingsAsync(CancellationToken cancellationToken = default)
@@ -173,38 +202,26 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<List<FloorResponseDto>> GetActiveFloorsAsync(int? wingId, CancellationToken cancellationToken = default)
+    public async Task<List<FloorResponseDto>> GetActiveFloorsAsync(int societyId, CancellationToken cancellationToken = default)
     {
-        if (wingId is null or <= 0)
-        {
-            return await _context.FloorMasters
-                .AsNoTracking()
-                .Where(x => x.IsActive)
-                .OrderBy(x => x.FloorNumber)
-                .Select(x => new FloorResponseDto
-                {
-                    Id = x.Id,
-                    Code = x.Code,
-                    Name = x.Name,
-                    FloorNumber = x.FloorNumber,
-                    IsActive = x.IsActive
-                })
-                .ToListAsync(cancellationToken);
-        }
-
-        var query = _context.FloorMasters
-      .AsNoTracking()
-      .Where(x => x.IsActive && x.WingID == wingId.Value);
-
-        return await query
+        return await _context.FloorMasters
+            .AsNoTracking()
+            .Where(x => x.IsActive && x.SocietyID == societyId)
             .OrderBy(x => x.FloorNumber)
             .Select(x => new FloorResponseDto
             {
                 Id = x.Id,
+                SocietyID = x.SocietyID,
+                WingID = x.WingID,
                 Code = x.Code,
                 Name = x.Name,
                 FloorNumber = x.FloorNumber,
-                IsActive = x.IsActive
+                IsActive = x.IsActive,
+                FlatCount = _context.PmSocietyWingFlatConfigs.Count(config =>
+                    config.SocietyId == societyId &&
+                    config.WingId == x.WingID &&
+                    config.FloorId == x.Id &&
+                    config.IsActive)
             })
             .ToListAsync(cancellationToken);
     }
@@ -228,14 +245,20 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
 
     public async Task<FlatResponseDto> AddMappingAsync(int societyId, CreateSocietyMappingDto dto, CancellationToken cancellationToken = default)
     {
-        await EnsureSocietyExistsAsync(societyId, cancellationToken);
-        await ValidateMasterReferencesAsync(dto.WingId, dto.FloorId, dto.FlatId, cancellationToken);
-        await ValidateWingFlatUniquenessAsync(societyId, dto.WingId, dto.FloorId, dto.FlatId, cancellationToken);
+        var flatTypeId = dto.ResolvedFlatTypeId;
+        if (flatTypeId <= 0)
+        {
+            throw new InvalidOperationException("Flat Type is required.");
+        }
 
-        var config = await UpsertMappingAsync(societyId, dto.WingId, dto.FloorId, dto.FlatId, cancellationToken);
+        await EnsureSocietyExistsAsync(societyId, cancellationToken);
+        await ValidateMasterReferencesAsync(dto.WingId, dto.FloorId, flatTypeId, cancellationToken);
+        await ValidateWingFlatUniquenessAsync(societyId, dto.WingId, dto.FloorId, flatTypeId, cancellationToken);
+
+        var config = await UpsertMappingAsync(societyId, dto.WingId, dto.FloorId, flatTypeId, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return MapFlat(config.Flat, config.IsActive);
+        return MapConfigToFlatDto(config);
     }
 
     public async Task DeactivateWingForSocietyAsync(int societyId, int wingId, CancellationToken cancellationToken = default)
@@ -283,7 +306,7 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
                 x.SocietyId == societyId &&
                 x.WingId == wingId &&
                 x.FloorId == floorId &&
-                x.FlatId == flatId &&
+                (x.Id == flatId || x.FlatTypeId == flatId) &&
                 x.IsActive,
                 cancellationToken)
             ?? throw new InvalidOperationException("Flat configuration not found.");
@@ -329,15 +352,15 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
         var existingActive = await _context.PmSocietyWingFlatConfigs
             .AsNoTracking()
             .Where(x => x.SocietyId == societyId && x.IsActive)
-            .Select(x => new { x.WingId, x.FloorId, x.FlatId })
+            .Select(x => new { x.WingId, x.FloorId, x.FlatTypeId })
             .ToListAsync(cancellationToken);
 
         var existingExact = existingActive
-            .Select(x => ToExactMappingKey(x.WingId, x.FloorId, x.FlatId))
+            .Select(x => ToExactMappingKey(x.WingId, x.FloorId, x.FlatTypeId))
             .ToHashSet(StringComparer.Ordinal);
 
         var existingWingFlat = existingActive
-            .Select(x => ToWingFlatKey(x.WingId, x.FlatId))
+            .Select(x => ToWingFlatKey(x.WingId, x.FlatTypeId))
             .ToHashSet(StringComparer.Ordinal);
 
         var (eligibleMappings, skippedDuplicates) = BuildEligibleMappings(
@@ -462,11 +485,12 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
         {
             WingId = m.WingId,
             FloorId = m.FloorId,
-            FlatId = m.FlatId,
+            FlatTypeId = m.Flat.TypeId ?? m.FlatId,
+            FlatNumber = m.Flat.Code,
             IsActive = true,
             Wing = m.Wing,
             Floor = m.Floor,
-            Flat = m.Flat
+            FlatType = m.Flat.Type!
         }).ToList();
 
     private static string ToExactMappingKey(int wingId, int floorId, int flatId) =>
@@ -503,16 +527,16 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
         int societyId,
         int wingId,
         int floorId,
-        int flatId,
+        int flatTypeId,
         CancellationToken cancellationToken)
     {
         var existing = await _context.PmSocietyWingFlatConfigs
-            .Include(x => x.Flat).ThenInclude(f => f.Type)
+            .Include(x => x.FlatType)
             .FirstOrDefaultAsync(x =>
                 x.SocietyId == societyId &&
                 x.WingId == wingId &&
                 x.FloorId == floorId &&
-                x.FlatId == flatId,
+                x.FlatTypeId == flatTypeId,
                 cancellationToken);
 
         if (existing is not null)
@@ -522,26 +546,25 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
                 throw new InvalidOperationException("This society mapping already exists.");
             }
 
-            await ValidateWingFlatUniquenessAsync(societyId, wingId, floorId, flatId, cancellationToken);
             existing.IsActive = true;
             return existing;
         }
+
+        var flatType = await _context.FlatCategoryMasters
+            .FirstOrDefaultAsync(x => x.Id == flatTypeId, cancellationToken)
+            ?? throw new InvalidOperationException("Selected Flat Type is invalid.");
 
         var config = new PmSocietyWingFlatConfig
         {
             SocietyId = societyId,
             WingId = wingId,
             FloorId = floorId,
-            FlatId = flatId,
+            FlatTypeId = flatTypeId,
+            FlatType = flatType,
             IsActive = true
         };
 
         await _context.PmSocietyWingFlatConfigs.AddAsync(config, cancellationToken);
-
-        var flat = await _context.FlatMasters.Include(x => x.Type)
-            .FirstAsync(x => x.Id == flatId, cancellationToken);
-
-        config.Flat = flat;
         return config;
     }
 
@@ -549,36 +572,36 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
         int societyId,
         int wingId,
         int floorId,
-        int flatId,
+        int flatTypeId,
         CancellationToken cancellationToken)
     {
-        var duplicateInWing = await _context.PmSocietyWingFlatConfigs
+        var duplicate = await _context.PmSocietyWingFlatConfigs
             .AsNoTracking()
             .AnyAsync(x =>
                 x.SocietyId == societyId &&
                 x.WingId == wingId &&
-                x.FlatId == flatId &&
-                x.FloorId != floorId &&
+                x.FloorId == floorId &&
+                x.FlatTypeId == flatTypeId &&
                 x.IsActive,
                 cancellationToken);
 
-        if (duplicateInWing)
+        if (duplicate)
         {
-            var flatCode = await _context.FlatMasters
+            var typeName = await _context.FlatCategoryMasters
                 .AsNoTracking()
-                .Where(x => x.Id == flatId)
-                .Select(x => x.Code)
+                .Where(x => x.Id == flatTypeId)
+                .Select(x => x.Type)
                 .FirstOrDefaultAsync(cancellationToken);
 
             throw new InvalidOperationException(
-                $"Flat {flatCode ?? flatId.ToString()} is already mapped to another floor in this wing.");
+                $"Flat Type {typeName ?? flatTypeId.ToString()} is already mapped to this floor.");
         }
     }
 
     private async Task ValidateMasterReferencesAsync(
         int wingId,
         int floorId,
-        int flatId,
+        int flatTypeId,
         CancellationToken cancellationToken)
     {
         var wingActive = await _context.WingMasters
@@ -597,11 +620,11 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
             throw new InvalidOperationException("Selected floor is invalid or inactive.");
         }
 
-        var flatExists = await _context.FlatMasters.AnyAsync(x => x.Id == flatId, cancellationToken);
+        var flatTypeExists = await _context.FlatCategoryMasters.AnyAsync(x => x.Id == flatTypeId, cancellationToken);
 
-        if (!flatExists)
+        if (!flatTypeExists)
         {
-            throw new InvalidOperationException("Selected flat is invalid.");
+            throw new InvalidOperationException("Selected flat type is invalid.");
         }
     }
 
@@ -649,10 +672,10 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
                 {
                     Wing = new WingResponseDto
                     {
-                        Id = wing.Id,
-                        Code = wing.Code,
-                        Name = wing.Name,
-                        IsActive = wing.IsActive,
+                        Id = wing?.Id ?? wingGroup.Key,
+                        Code = wing?.Code ?? string.Empty,
+                        Name = wing?.Name ?? string.Empty,
+                        IsActive = wing?.IsActive ?? true,
                         FloorCount = wingGroup.Select(x => x.FloorId).Distinct().Count(),
                         FlatCount = wingGroup.Count()
                     },
@@ -665,15 +688,17 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
                             {
                                 Floor = new FloorResponseDto
                                 {
-                                    Id = floor.Id,
-                                    Code = floor.Code,
-                                    Name = floor.Name,
-                                    FloorNumber = floor.FloorNumber,
-                                    IsActive = floor.IsActive,
+                                    Id = floor?.Id ?? floorGroup.Key,
+                                    SocietyID = floor?.SocietyID ?? 0,
+                                    WingID = floor?.WingID ?? 0,
+                                    Code = floor?.Code ?? string.Empty,
+                                    Name = floor?.Name ?? string.Empty,
+                                    FloorNumber = floor?.FloorNumber ?? 0,
+                                    IsActive = floor?.IsActive ?? true,
                                     FlatCount = floorGroup.Count()
                                 },
                                 Flats = floorGroup
-                                    .Select(x => MapFlat(x.Flat, x.IsActive))
+                                    .Select(x => MapConfigToFlatDto(x))
                                     .OrderBy(x => x.Code)
                                     .ToList()
                             };
@@ -686,15 +711,20 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
             .ToList();
     }
 
-    private static FlatResponseDto MapFlat(FlatMaster flat, bool isActive)
+    private static FlatResponseDto MapConfigToFlatDto(PmSocietyWingFlatConfig config)
     {
+        var code = !string.IsNullOrWhiteSpace(config.FlatNumber)
+            ? config.FlatNumber
+            : (config.FlatType?.Type ?? string.Empty);
+
         return new FlatResponseDto
         {
-            Id = flat.Id,
-            Code = flat.Code,
-            TypeId = flat.TypeId,
-            TypeName = flat.Type?.Type,
-            IsActive = isActive
+            Id = config.Id,
+            Code = code,
+            FlatNumber = config.FlatNumber,
+            TypeId = config.FlatTypeId,
+            TypeName = config.FlatType?.Type,
+            IsActive = config.IsActive
         };
     }
 
@@ -867,5 +897,263 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
         // Soft delete: set IsActive = false
         wing.IsActive = false;
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+
+    public async Task<PmFlatConfigResponseDto> CreateFlatConfigAsync(
+    CreatePmFlatConfigDto dto,
+    CancellationToken cancellationToken = default)
+    {
+        if (dto.SocietyId <= 0)
+            throw new InvalidOperationException("Society is required.");
+
+        if (dto.WingId <= 0)
+            throw new InvalidOperationException("Wing is required.");
+
+        if (dto.FloorId <= 0)
+            throw new InvalidOperationException("Floor is required.");
+
+        if (string.IsNullOrWhiteSpace(dto.Code))
+            throw new InvalidOperationException("Flat number is required.");
+
+        if (dto.TypeId <= 0)
+            throw new InvalidOperationException("Flat type is required.");
+
+        var code = dto.Code.Trim();
+
+        // 1. Validate Society
+        var societyExists = await _context.PmAccounts
+            .AnyAsync(
+                x => x.ID == dto.SocietyId,
+                cancellationToken);
+
+        if (!societyExists)
+            throw new InvalidOperationException("Selected society does not exist.");
+
+        // 2. Validate Wing belongs to Society
+        var wingExists = await _context.WingMasters
+            .AnyAsync(
+                x => x.Id == dto.WingId &&
+                     x.SocietyID == dto.SocietyId &&
+                     x.IsActive,
+                cancellationToken);
+
+        if (!wingExists)
+            throw new InvalidOperationException(
+                "Selected wing does not belong to the selected society.");
+
+        // 3. Validate Floor belongs to Wing + Society
+        var floorExists = await _context.FloorMasters
+            .AnyAsync(
+                x => x.Id == dto.FloorId &&
+                     x.WingID == dto.WingId &&
+                     x.SocietyID == dto.SocietyId &&
+                     x.IsActive,
+                cancellationToken);
+
+        if (!floorExists)
+            throw new InvalidOperationException(
+                "Selected floor does not belong to the selected wing.");
+
+        // 4. Validate Flat Type
+        var flatType = await _context.FlatCategoryMasters
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.Id == dto.TypeId,
+                cancellationToken);
+
+        if (flatType is null)
+            throw new InvalidOperationException(
+                "Selected flat type does not exist.");
+
+        // 5. Check duplicate Flat Number
+        var duplicateFlat = await _context.PmFlatConfigs
+            .AnyAsync(
+                x => x.FlatNumber == code &&
+                     x.IsActive,
+                cancellationToken);
+
+        if (duplicateFlat)
+            throw new InvalidOperationException(
+                $"Flat number '{code}' already exists.");
+
+        // 6. Create pmFlatConfig
+        var flatConfig = new PmFlatConfig
+        {
+            FlatNumber = code,
+            FlatTypeID = dto.TypeId,
+            IsActive = true,
+            CreatedDate = DateTime.UtcNow
+        };
+
+        await _context.PmFlatConfigs.AddAsync(
+            flatConfig,
+            cancellationToken);
+
+        // IMPORTANT:
+        // Save first so database generates pmFlatConfig.ID.
+        await _context.SaveChangesAsync(cancellationToken);
+
+        // 7. Use generated pmFlatConfig.ID as FlatID
+        var mapping = new PmSocietyWingFlatConfig
+        {
+            SocietyId = dto.SocietyId,
+            WingId = dto.WingId,
+            FloorId = dto.FloorId,
+            FlatID = flatConfig.Id,
+            FlatTypeId = dto.TypeId,
+            FlatNumber = code,
+            IsActive = true
+        };
+
+        await _context.PmSocietyWingFlatConfigs.AddAsync(
+            mapping,
+            cancellationToken);
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        // 8. Return response
+        return new PmFlatConfigResponseDto
+        {
+            Id = flatConfig.Id,
+            SocietyId = dto.SocietyId,
+            WingId = dto.WingId,
+            FloorId = dto.FloorId,
+            Code = flatConfig.FlatNumber,
+            TypeId = flatConfig.FlatTypeID,
+            TypeName = flatType.Type,
+            IsActive = flatConfig.IsActive
+        };
+    }
+
+
+
+    public async Task<PmFlatConfigResponseDto> CreateFlatAsync(
+    CreateFlatDto dto,
+    CancellationToken cancellationToken = default)
+    {
+        if (dto.SocietyId <= 0)
+            throw new InvalidOperationException("Society is required.");
+
+        if (dto.WingId <= 0)
+            throw new InvalidOperationException("Wing is required.");
+
+        if (dto.FloorId <= 0)
+            throw new InvalidOperationException("Floor is required.");
+
+        if (string.IsNullOrWhiteSpace(dto.Code))
+            throw new InvalidOperationException("Flat number is required.");
+
+        if (dto.TypeId <= 0)
+            throw new InvalidOperationException("Flat type is required.");
+
+        var code = dto.Code.Trim();
+
+        // Validate Society
+        var societyExists = await _context.PmAccounts
+            .AnyAsync(
+                x => x.ID == dto.SocietyId,
+                cancellationToken);
+
+        if (!societyExists)
+            throw new InvalidOperationException(
+                "Selected society does not exist.");
+
+        // Validate Wing belongs to Society
+        var wingExists = await _context.WingMasters
+            .AnyAsync(
+                x => x.Id == dto.WingId &&
+                     x.SocietyID == dto.SocietyId &&
+                     x.IsActive,
+                cancellationToken);
+
+        if (!wingExists)
+            throw new InvalidOperationException(
+                "Selected wing does not belong to the selected society.");
+
+        // Validate Floor belongs to Wing
+        var floorExists = await _context.FloorMasters
+            .AnyAsync(
+                x => x.Id == dto.FloorId &&
+                     x.WingID == dto.WingId &&
+                     x.SocietyID == dto.SocietyId &&
+                     x.IsActive,
+                cancellationToken);
+
+        if (!floorExists)
+            throw new InvalidOperationException(
+                "Selected floor does not belong to the selected wing.");
+
+        // Validate Flat Type
+        var flatType = await _context.FlatCategoryMasters
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.Id == dto.TypeId,
+                cancellationToken);
+
+        if (flatType is null)
+            throw new InvalidOperationException(
+                "Selected flat type does not exist.");
+
+        // Check duplicate flat number
+        var duplicate = await _context.PmFlatConfigs
+            .AnyAsync(
+                x => x.FlatNumber == code &&
+                     x.IsActive,
+                cancellationToken);
+
+        if (duplicate)
+            throw new InvalidOperationException(
+                $"Flat number '{code}' already exists.");
+
+        // Create pmFlatConfig
+        var flat = new PmFlatConfig
+        {
+            FlatNumber = code,
+            FlatTypeID = dto.TypeId,
+            IsActive = true,
+            CreatedDate = DateTime.UtcNow
+        };
+
+        await _context.PmFlatConfigs.AddAsync(
+            flat,
+            cancellationToken);
+
+        await _context.SaveChangesAsync(
+            cancellationToken);
+
+        // Generated pmFlatConfig.ID
+        // will be stored as FlatID
+        // in pmSocietyWingFlatConfig.
+
+        var mapping = new PmSocietyWingFlatConfig
+        {
+            SocietyId = dto.SocietyId,
+            WingId = dto.WingId,
+            FloorId = dto.FloorId,
+            FlatID = flat.Id,
+            FlatTypeId = dto.TypeId,
+            FlatNumber = code,
+            IsActive = true
+        };
+
+        await _context.PmSocietyWingFlatConfigs.AddAsync(
+            mapping,
+            cancellationToken);
+
+        await _context.SaveChangesAsync(
+            cancellationToken);
+
+        return new PmFlatConfigResponseDto
+        {
+            Id = flat.Id,
+            SocietyId = dto.SocietyId,
+            WingId = dto.WingId,
+            FloorId = dto.FloorId,
+            Code = flat.FlatNumber,
+            TypeId = flat.FlatTypeID,
+            TypeName = flatType.Type,
+            IsActive = flat.IsActive
+        };
     }
 }

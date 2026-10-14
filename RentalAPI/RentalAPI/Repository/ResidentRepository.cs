@@ -43,7 +43,7 @@ namespace RentalAPI.Repository
                         .ThenInclude(cfg => cfg.Wing)
                 .Include(r => r.FlatMappings)
                     .ThenInclude(fm => fm.SocietyWingFlatConfig)
-                        .ThenInclude(cfg => cfg.Flat)
+                        .ThenInclude(cfg => cfg.FlatType)
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 
@@ -164,10 +164,10 @@ namespace RentalAPI.Repository
                 .Include(c => c.Society)
                 .Include(c => c.Wing)
                 .Include(c => c.Floor)
-                .Include(c => c.Flat)
+                .Include(c => c.FlatType)
                 .FirstOrDefaultAsync(c => c.Id == dto.SocietyWingFlatConfigId && c.IsActive);
 
-            if (config == null || config.Society == null || config.Wing == null || config.Floor == null || config.Flat == null)
+            if (config == null || config.Society == null || config.Wing == null || config.Floor == null || config.FlatType == null)
             {
                 throw new InvalidOperationException("Selected flat configuration is invalid, inactive, or has incomplete relationships.");
             }

@@ -32,6 +32,6 @@ public class PmAdminAccountRepository : IPmAdminAccountRepository
     public async Task<PmAdminAccount?> GetByIdAsync(int id)
     {
         return await _context.PmAdminAccounts
-            .FirstOrDefaultAsync(x => x.ID == id);
+            .FirstOrDefaultAsync(x => x.SocietyID == id);
     }
 }

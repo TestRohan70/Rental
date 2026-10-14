@@ -46,7 +46,7 @@ public class VisitorRepository : IVisitorRepository
             .Include(m => m.SocietyWingFlatConfig)
                 .ThenInclude(c => c.Wing)
             .Include(m => m.SocietyWingFlatConfig)
-                .ThenInclude(c => c.Flat)
+                .ThenInclude(c => c.FlatType)
             .Where(m => m.ResidentId == resident.Id && m.IsActive)
             .ToListAsync();
 
@@ -92,7 +92,7 @@ public class VisitorRepository : IVisitorRepository
         var otpExpiresAt = DateTime.UtcNow.AddHours(24);
 
         var wingName = resolvedMapping.SocietyWingFlatConfig.Wing?.Name ?? string.Empty;
-        var flatCode = resolvedMapping.SocietyWingFlatConfig.Flat?.Code ?? string.Empty;
+        var flatCode = resolvedMapping.SocietyWingFlatConfig.FlatNumber ?? resolvedMapping.SocietyWingFlatConfig.FlatType?.Type ?? string.Empty;
         int.TryParse(flatCode, out int flatNo);
 
         var request = new VisitorRequest
@@ -146,7 +146,7 @@ public class VisitorRepository : IVisitorRepository
         var flatConfig = await _context.PmSocietyWingFlatConfigs
             .AsNoTracking()
             .Include(c => c.Wing)
-            .Include(c => c.Flat)
+            .Include(c => c.FlatType)
             .FirstOrDefaultAsync(c => c.Id == dto.SocietyWingFlatConfigId && c.SocietyId == societyId);
 
         if (flatConfig == null)
@@ -179,7 +179,7 @@ public class VisitorRepository : IVisitorRepository
 
         var pendingStatus = await GetStatusByCodeAsync(VisitorStatusConstants.Pending);
         var wingName = flatConfig.Wing?.Name ?? string.Empty;
-        var flatCode = flatConfig.Flat?.Code ?? string.Empty;
+        var flatCode = flatConfig.FlatNumber ?? flatConfig.FlatType?.Type ?? string.Empty;
         int.TryParse(flatCode, out int flatNo);
 
         var request = new VisitorRequest
@@ -386,7 +386,7 @@ public class VisitorRepository : IVisitorRepository
             .Include(r => r.SocietyWingFlatConfig)
                 .ThenInclude(c => c.Wing)
             .Include(r => r.SocietyWingFlatConfig)
-                .ThenInclude(c => c.Flat)
+                .ThenInclude(c => c.FlatType)
             .FirstOrDefaultAsync(r => r.Id == dto.VisitorRequestId && r.SocietyId == societyId);
 
         if (request == null)
@@ -441,7 +441,7 @@ public class VisitorRepository : IVisitorRepository
         await _notificationService.CreateVisitorCheckedInNotification(request);
 
         var wing = request.Wing ?? request.SocietyWingFlatConfig?.Wing?.Name;
-        var flat = request.FlatNo?.ToString() ?? request.SocietyWingFlatConfig?.Flat?.Code;
+        var flat = request.FlatNo?.ToString() ?? request.SocietyWingFlatConfig?.FlatNumber ?? request.SocietyWingFlatConfig?.FlatType?.Type;
 
         return new VisitorVisitResponseDto
         {
@@ -475,7 +475,7 @@ public class VisitorRepository : IVisitorRepository
             .Include(r => r.SocietyWingFlatConfig)
                 .ThenInclude(c => c.Wing)
             .Include(r => r.SocietyWingFlatConfig)
-                .ThenInclude(c => c.Flat)
+                .ThenInclude(c => c.FlatType)
             .FirstOrDefaultAsync(r => r.Id == dto.VisitorRequestId && r.SocietyId == societyId);
 
         if (request == null)
@@ -504,7 +504,7 @@ public class VisitorRepository : IVisitorRepository
         await _notificationService.CreateVisitorCheckedOutNotification(request);
 
         var wing = request.Wing ?? request.SocietyWingFlatConfig?.Wing?.Name;
-        var flat = request.FlatNo?.ToString() ?? request.SocietyWingFlatConfig?.Flat?.Code;
+        var flat = request.FlatNo?.ToString() ?? request.SocietyWingFlatConfig?.FlatNumber ?? request.SocietyWingFlatConfig?.FlatType?.Type;
 
         return new VisitorVisitResponseDto
         {
@@ -542,7 +542,7 @@ public class VisitorRepository : IVisitorRepository
             .Include(r => r.SocietyWingFlatConfig)
                 .ThenInclude(c => c.Wing)
             .Include(r => r.SocietyWingFlatConfig)
-                .ThenInclude(c => c.Flat)
+                .ThenInclude(c => c.FlatType)
             .Include(r => r.Status)
             .Include(r => r.VisitorVisits)
             .Where(r => r.ResidentId == resident.Id)
@@ -567,7 +567,7 @@ public class VisitorRepository : IVisitorRepository
             .Include(r => r.SocietyWingFlatConfig)
                 .ThenInclude(c => c.Wing)
             .Include(r => r.SocietyWingFlatConfig)
-                .ThenInclude(c => c.Flat)
+                .ThenInclude(c => c.FlatType)
             .Include(r => r.Status)
             .Include(r => r.VisitorVisits)
             .Where(r => r.SocietyId == societyId &&
@@ -595,7 +595,7 @@ public class VisitorRepository : IVisitorRepository
                     .ThenInclude(c => c.Wing)
             .Include(v => v.VisitorRequest)
                 .ThenInclude(r => r.SocietyWingFlatConfig)
-                    .ThenInclude(c => c.Flat)
+                    .ThenInclude(c => c.FlatType)
             .Include(v => v.VisitorRequest)
                 .ThenInclude(r => r.Status)
             .Where(v => v.CheckInDateTime != null &&
@@ -620,7 +620,7 @@ public class VisitorRepository : IVisitorRepository
             .Include(r => r.SocietyWingFlatConfig)
                 .ThenInclude(c => c.Wing)
             .Include(r => r.SocietyWingFlatConfig)
-                .ThenInclude(c => c.Flat)
+                .ThenInclude(c => c.FlatType)
             .Include(r => r.Status)
             .Include(r => r.VisitorVisits)
             .AsQueryable();
@@ -698,13 +698,11 @@ public class VisitorRepository : IVisitorRepository
         var flats = await _context.PmSocietyWingFlatConfigs
             .AsNoTracking()
             .Where(c => c.SocietyId == societyId && c.WingId == wingId && c.FloorId == floorId && c.IsActive)
-            .Select(c => c.Flat)
-            .Distinct()
-            .OrderBy(fl => fl.Code)
+            .OrderBy(fl => fl.FlatNumber ?? (fl.FlatType != null ? fl.FlatType.Type : ""))
             .Select(fl => new FlatDto
             {
                 Id = fl.Id,
-                Code = fl.Code
+                Code = fl.FlatNumber ?? (fl.FlatType != null ? fl.FlatType.Type : string.Empty)
             })
             .ToListAsync();
 
@@ -737,11 +735,11 @@ public class VisitorRepository : IVisitorRepository
             .Include(m => m.SocietyWingFlatConfig)
                 .ThenInclude(c => c.Wing)
             .Include(m => m.SocietyWingFlatConfig)
-                .ThenInclude(c => c.Flat)
+                .ThenInclude(c => c.FlatType)
             .Where(m => m.IsActive &&
                         m.SocietyWingFlatConfig.SocietyId == societyId &&
                         (m.SocietyWingFlatConfig.Wing.Code.ToUpper() == normalizedWing || m.SocietyWingFlatConfig.Wing.Name.ToUpper() == normalizedWing) &&
-                        m.SocietyWingFlatConfig.Flat.Code == flatNo.ToString() &&
+                        (m.SocietyWingFlatConfig.FlatNumber == flatNo.ToString() || m.SocietyWingFlatConfig.FlatType.Type == flatNo.ToString()) &&
                         m.Resident.Status == "Approved")
             .FirstOrDefaultAsync();
 
@@ -774,8 +772,8 @@ public class VisitorRepository : IVisitorRepository
         var config = await _context.PmSocietyWingFlatConfigs
             .AsNoTracking()
             .Include(c => c.Wing)
-            .Include(c => c.Flat)
-            .FirstOrDefaultAsync(c => c.SocietyId == societyId && c.WingId == wingId && c.FloorId == floorId && c.FlatId == flatId && c.IsActive);
+            .Include(c => c.FlatType)
+            .FirstOrDefaultAsync(c => c.SocietyId == societyId && c.WingId == wingId && c.FloorId == floorId && (c.Id == flatId || c.FlatTypeId == flatId) && c.IsActive);
 
         if (config == null)
         {
@@ -790,20 +788,20 @@ public class VisitorRepository : IVisitorRepository
 
         if (residentMappings.Count == 0)
         {
-            return (null, $"No approved resident found for Wing {config.Wing?.Name} Flat {config.Flat?.Code} in your society.");
+            return (null, $"No approved resident found for Wing {config.Wing?.Name} Flat {config.FlatNumber ?? config.FlatType?.Type} in your society.");
         }
 
         var primaryMapping = residentMappings.FirstOrDefault(m => m.IsPrimary) ?? residentMappings.FirstOrDefault();
         var res = primaryMapping!.Resident;
 
-        int.TryParse(config.Flat?.Code, out int flatNo);
+        int.TryParse(config.FlatNumber ?? config.FlatType?.Type, out int resolvedFlatNo);
 
         return (new
         {
             res.Id,
             res.Name,
             Wing = config.Wing?.Name,
-            FlatNo = flatNo,
+            FlatNo = resolvedFlatNo,
             SocietyWingFlatConfigId = config.Id,
             OwnershipType = primaryMapping.OwnershipType
         }, null);
@@ -918,7 +916,7 @@ public class VisitorRepository : IVisitorRepository
         var activeVisit = request.VisitorVisits?.OrderByDescending(v => v.CreatedDate).FirstOrDefault();
 
         var wingName = request.Wing ?? request.SocietyWingFlatConfig?.Wing?.Name;
-        var flatCode = request.FlatNo?.ToString() ?? request.SocietyWingFlatConfig?.Flat?.Code;
+        var flatCode = request.FlatNo?.ToString() ?? request.SocietyWingFlatConfig?.FlatNumber ?? request.SocietyWingFlatConfig?.FlatType?.Type;
 
         return new VisitorRequestResponseDto
         {
@@ -957,7 +955,7 @@ public class VisitorRepository : IVisitorRepository
         {
             var activeVisit = request.VisitorVisits?.OrderByDescending(v => v.CreatedDate).FirstOrDefault();
             var wingName = request.Wing ?? request.SocietyWingFlatConfig?.Wing?.Name;
-            var flatCode = request.FlatNo?.ToString() ?? request.SocietyWingFlatConfig?.Flat?.Code;
+            var flatCode = request.FlatNo?.ToString() ?? request.SocietyWingFlatConfig?.FlatNumber ?? request.SocietyWingFlatConfig?.FlatType?.Type;
 
             return new VisitorRequestResponseDto
             {

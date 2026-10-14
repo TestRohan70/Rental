@@ -32,14 +32,16 @@ public class PmAdminAccountController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    [HttpGet("society/{societyId}")]
+    public async Task<IActionResult> GetById(int societyId)
     {
-        var result = await _service.GetByIdAsync(id);
+        var result = await _service.GetByIdAsync(societyId);
 
         if (result == null)
             return NotFound();
 
         return Ok(result);
     }
+
+
 }
