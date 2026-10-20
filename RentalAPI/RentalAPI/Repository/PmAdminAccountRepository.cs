@@ -16,9 +16,35 @@ public class PmAdminAccountRepository : IPmAdminAccountRepository
     public async Task<PmAdminAccount> CreateAsync(PmAdminAccount account)
     {
         _context.PmAdminAccounts.Add(account);
-
         await _context.SaveChangesAsync();
+        var email = account.Email.Trim();
 
+        var existingUser = await _context.SysmUsers
+            .AnyAsync(u => u.Email == email);
+
+        if (existingUser)
+            throw new InvalidOperationException("Email already exists.");
+
+        // Fetch Admin role dynamically
+        var adminRole = await _context.Roles
+            .FirstOrDefaultAsync(r => r.Code == "SOCIETYADMIN");
+
+        if (adminRole == null)
+            throw new InvalidOperationException("Admin role not found.");
+
+        var user = new SysmUser
+        {
+            UserName = account.Username.Trim(),
+            Email = email,
+            Password = account.PasswordHash,
+            RoleId = adminRole.Id,
+            IsActive = account.IsActive,
+            CreatedDate = DateTime.UtcNow,
+            UpdatedDate = null
+        };
+
+        await _context.SysmUsers.AddAsync(user);
+        await _context.SaveChangesAsync();
         return account;
     }
 
@@ -29,9 +55,9 @@ public class PmAdminAccountRepository : IPmAdminAccountRepository
             .ToListAsync();
     }
 
-    public async Task<PmAdminAccount?> GetByIdAsync(int id)
+    public async Task<List<PmAdminAccount>> GetByIdAsync(int societyId)
     {
-        return await _context.PmAdminAccounts
-            .FirstOrDefaultAsync(x => x.SocietyID == id);
+        return await _context.PmAdminAccounts.Where(x => x.SocietyID == societyId).ToListAsync();
+
     }
 }

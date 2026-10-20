@@ -136,7 +136,7 @@ namespace RentalAPI.Repository
         }
 
         public async Task<Resident> SelfRegister(SelfRegisterResidentDto dto)
-        {
+         {
             var rawOwnership = dto.OwnershipType?.Trim() ?? string.Empty;
             string normalizedOwnership;
             if (rawOwnership.Equals("Owner", StringComparison.OrdinalIgnoreCase))
@@ -160,14 +160,19 @@ namespace RentalAPI.Repository
                 throw new InvalidOperationException("Email already exists. Please try with another email.");
             }
 
-            var config = await _context.PmSocietyWingFlatConfigs
-                .Include(c => c.Society)
-                .Include(c => c.Wing)
-                .Include(c => c.Floor)
-                .Include(c => c.FlatType)
-                .FirstOrDefaultAsync(c => c.Id == dto.SocietyWingFlatConfigId && c.IsActive);
+            //var config = await _context.PmSocietyWingFlatConfigs
+            //    .Include(c => c.Society)
+            //    .Include(c => c.Wing)
+            //    .Include(c => c.Floor)
+            //    .Include(c => c.FlatType)
+            //    .FirstOrDefaultAsync(c => c.Id == dto.SocietyWingFlatConfigId && c.IsActive);
 
-            if (config == null || config.Society == null || config.Wing == null || config.Floor == null || config.FlatType == null)
+            var config = await _context.PmSocietyWingFlatConfigs.FirstOrDefaultAsync(c => c.Id == dto.SocietyWingFlatConfigId && c.IsActive);
+         
+
+            var flatId = config.FlatID;
+
+            if (config == null || config.FlatID == null || config.FloorId == null || config.WingId == null || config.SocietyId == null)
             {
                 throw new InvalidOperationException("Selected flat configuration is invalid, inactive, or has incomplete relationships.");
             }

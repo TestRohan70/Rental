@@ -34,7 +34,7 @@ public class PublicController : ControllerBase
 
         var trimmedCode = code.Trim();
 
-        var society = await _context.SocietyMasters
+        var society = await _context.PmAccount
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Code == trimmedCode);
 
@@ -45,9 +45,9 @@ public class PublicController : ControllerBase
 
         return Ok(new
         {
-            societyId = society.Id,
+            societyId = society.ID,
             code = society.Code,
-            name = society.Name
+            name = society.SocName
         });
     }
 
@@ -72,7 +72,31 @@ public class PublicController : ControllerBase
         return Ok(wings);
     }
 
-    [HttpGet("societies/{societyId}/wings/{wingId}/flats")]
+
+    [HttpGet("societies/{societyId}/wings/{wingId}/floors")]
+    public async Task<IActionResult> GetFloorForWing(int societyId, int wingId)
+    {
+        var floors = await _context.FloorMasters
+            .AsNoTracking()
+            .Where(c =>
+                c.SocietyID == societyId &&
+                c.WingID == wingId &&
+                c.IsActive)
+            .Select(c => new
+            {
+                floorId = c.Id,
+                floorName = c.Name,
+                societyId = c.SocietyID
+            })
+            .ToListAsync();
+
+        return Ok(floors);
+    }
+
+
+
+
+    [HttpGet("societies/{societyId}/wings/{wingId}/floors/{floorId}/flats")]
     public async Task<IActionResult> GetFlatsForWing(int societyId, int wingId)
     {
         var configs = await _context.PmSocietyWingFlatConfigs
@@ -88,7 +112,7 @@ public class PublicController : ControllerBase
                 societyWingFlatConfigId = c.Id,
                 flatId = c.Id,
                 flatTypeId = c.FlatTypeId,
-                //flatNumber = c.FlatNumber,
+                flatNumber = c.FlatNumber,
                 //flatCode = c.FlatNumber ?? (c.FlatType != null ? c.FlatType.Type : string.Empty),
                 flatTypeName = c.FlatType != null ? c.FlatType.Type : string.Empty,
                 floorId = c.FloorId,

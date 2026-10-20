@@ -8,6 +8,6 @@ namespace RentalAPI.Repository.IRepository
 
         Task<List<PmAdminAccount>> GetAllAsync();
 
-        Task<PmAdminAccount?> GetByIdAsync(int id);
+        Task<List<PmAdminAccount>> GetByIdAsync(int societyId);
     }
 }

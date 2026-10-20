@@ -21,14 +21,29 @@ namespace RentalAPI.Repository
             _logger = logger;
         }
 
-        public async Task<List<Resident>> GetPendingResidents(int societyId)
+        public async Task<List<PendingResidentDto>> GetPendingResidents(int societyId)
         {
             return await _context.Residents
-                .Include(r => r.User)
-                .Include(r => r.FlatMappings)
-                    .ThenInclude(fm => fm.SocietyWingFlatConfig)
-                .Where(x => x.Status == "Pending" &&
-                            x.FlatMappings.Any(fm => fm.SocietyWingFlatConfig.SocietyId == societyId))
+                .Where(r => r.Status == "Pending" &&
+                    r.FlatMappings.Any(fm =>
+                        fm.SocietyWingFlatConfig.SocietyId == societyId))
+                .Select(r => new PendingResidentDto
+                {
+                    Id = r.Id,
+                    UserId = r.UserId,
+                    Name = r.Name,
+                    Role = r.User.RoleNavigation.Name,
+                    Wing = r.FlatMappings
+                        .Where(fm => fm.SocietyWingFlatConfig.SocietyId == societyId)
+                        .Select(fm => fm.SocietyWingFlatConfig.Wing.Name)
+                        .FirstOrDefault(),
+                    flatNo = r.FlatMappings
+                        .Where(fm => fm.SocietyWingFlatConfig.SocietyId == societyId)
+                        .Select(fm => fm.SocietyWingFlatConfig.FlatNumber)
+                        .FirstOrDefault(),
+                    CreatedDate = r.CreatedDate,
+                    Status = r.Status
+                })
                 .ToListAsync();
         }
 
@@ -108,7 +123,7 @@ namespace RentalAPI.Repository
 
         public async Task<SocietyUserMapping> CreateSocietyAdmin(CreateSocietyAdminDto dto)
         {
-            var society = await _context.SocietyMasters.FirstOrDefaultAsync(s => s.Id == dto.SocietyId);
+            var society = await _context.PmAccount.FirstOrDefaultAsync(s => s.ID == dto.SocietyId);
             if (society == null)
             {
                 throw new KeyNotFoundException("Specified society does not exist.");

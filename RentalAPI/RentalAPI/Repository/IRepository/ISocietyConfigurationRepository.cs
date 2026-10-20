@@ -5,23 +5,31 @@ namespace RentalAPI.Repository.IRepository;
 
 public interface ISocietyConfigurationRepository
 {
-    Task<List<SocietyResponseDto>> GetSocietiesAsync(string? search, CancellationToken cancellationToken = default);
+    //Task<List<SocietyResponseDto>> GetSocietiesAsync(string? search, CancellationToken cancellationToken = default);
 
-    Task<SocietyResponseDto?> GetSocietyAsync(int societyId, CancellationToken cancellationToken = default);
+    //Task<SocietyResponseDto?> GetSocietyAsync(int societyId, CancellationToken cancellationToken = default);
 
-    Task<SocietyResponseDto> CreateSocietyAsync(CreateSocietyDto dto, CancellationToken cancellationToken = default);
+    //Task<SocietyResponseDto> CreateSocietyAsync(CreateSocietyDto dto, CancellationToken cancellationToken = default);
 
-    Task<SocietyResponseDto?> UpdateSocietyAsync(int societyId, UpdateSocietyDto dto, CancellationToken cancellationToken = default);
+    //Task<SocietyResponseDto?> UpdateSocietyAsync(int societyId, UpdateSocietyDto dto, CancellationToken cancellationToken = default);
 
     Task DeleteSocietyAsync(int societyId, CancellationToken cancellationToken = default);
 
-    Task<SocietyStructureDto?> GetSocietyStructureAsync(int societyId, CancellationToken cancellationToken = default);
+    //Task<SocietyStructureDto?> GetSocietyStructureAsync(int societyId, CancellationToken cancellationToken = default);
 
     Task<List<SocietyFlatConfigResponseDto>> GetSocietyFlatsAsync(int societyId, CancellationToken cancellationToken = default);
 
     Task<List<WingResponseDto>> GetActiveWingsAsync(CancellationToken cancellationToken = default);
 
-    Task<List<FloorResponseDto>> GetActiveFloorsAsync(int societyId, CancellationToken cancellationToken = default);
+    Task<List<FloorResponseDto>> GetActiveFloorsAsync(
+        int societyId,
+        int? wingId = null,
+        CancellationToken cancellationToken = default);
+    Task<List<ResidentFlatConfigResponseDto>> GetActiveFlatConfigurationsAsync(
+        int societyId,
+        int wingId,
+        int floorId,
+        CancellationToken cancellationToken = default);
     Task<PmFlatConfigResponseDto> CreateFlatConfigAsync(
     CreatePmFlatConfigDto dto,
     CancellationToken cancellationToken = default);
@@ -35,7 +43,7 @@ public interface ISocietyConfigurationRepository
 
     Task DeactivateFlatAsync(int societyId, int wingId, int floorId, int flatId, CancellationToken cancellationToken = default);
 
-    Task<GenerateStructurePreviewDto> GenerateStructureAsync(int societyId, GenerateSocietyStructureDto dto, CancellationToken cancellationToken = default);
+    //Task<GenerateStructurePreviewDto> GenerateStructureAsync(int societyId, GenerateSocietyStructureDto dto, CancellationToken cancellationToken = default);
 
     // Wing Master CRUD
     Task<List<WingListDto>> GetAllWingsAsync(

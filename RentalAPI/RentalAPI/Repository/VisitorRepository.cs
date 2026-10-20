@@ -908,10 +908,10 @@ public class VisitorRepository : IVisitorRepository
             request.Resident = await _context.Residents.FindAsync(request.ResidentId) ?? new Resident();
         }
 
-        if (request.Society == null && request.SocietyId.HasValue)
-        {
-            request.Society = await _context.SocietyMasters.FindAsync(request.SocietyId.Value);
-        }
+        //if (request.Society == null && request.SocietyId.HasValue)
+        //{
+        //    request.Society = await _context.PmAccount.FindAsync(request.SocietyId.Value);
+        //}
 
         var activeVisit = request.VisitorVisits?.OrderByDescending(v => v.CreatedDate).FirstOrDefault();
 

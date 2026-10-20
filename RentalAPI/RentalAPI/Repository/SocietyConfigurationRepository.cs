@@ -17,101 +17,101 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
         _context = context;
     }
 
-    public async Task<List<SocietyResponseDto>> GetSocietiesAsync(string? search, CancellationToken cancellationToken = default)
-    {
-        var query = _context.SocietyMasters.AsNoTracking();
+    //public async Task<List<SocietyResponseDto>> GetSocietiesAsync(string? search, CancellationToken cancellationToken = default)
+    //{
+    //    var query = _context.PmAccount.AsNoTracking();
 
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var term = search.Trim();
-            query = query.Where(x => x.Name.Contains(term) || x.Location != null && x.Location.Contains(term));
-        }
+    //    if (!string.IsNullOrWhiteSpace(search))
+    //    {
+    //        var term = search.Trim();
+    //        query = query.Where(x => x.SocName.Contains(term));
+    //    }
 
-        var societies = await query.OrderBy(x => x.Name).ToListAsync(cancellationToken);
-        var configs = await _context.PmSocietyWingFlatConfigs
-            .AsNoTracking()
-            .Where(x => x.IsActive)
-            .ToListAsync(cancellationToken);
+    //    var societies = await query.OrderBy(x => x.SocName).ToListAsync(cancellationToken);
+    //    var configs = await _context.PmSocietyWingFlatConfigs
+    //        .AsNoTracking()
+    //        .Where(x => x.IsActive)
+    //        .ToListAsync(cancellationToken);
 
-        return societies.Select(s => MapSocietySummary(s, configs.Where(c => c.SocietyId == s.Id))).ToList();
-    }
+    //    return societies.Select(s => MapSocietySummary(s, configs.Where(c => c.SocietyId == s.ID))).ToList();
+    //}
 
-    public async Task<SocietyResponseDto?> GetSocietyAsync(int societyId, CancellationToken cancellationToken = default)
-    {
-        var society = await _context.SocietyMasters.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == societyId, cancellationToken);
+    //public async Task<SocietyResponseDto?> GetSocietyAsync(int societyId, CancellationToken cancellationToken = default)
+    //{
+    //    var society = await _context.PmAccount.AsNoTracking()
+    //        .FirstOrDefaultAsync(x => x.ID == societyId, cancellationToken);
 
-        if (society is null)
-        {
-            return null;
-        }
+    //    if (society is null)
+    //    {
+    //        return null;
+    //    }
 
-        var configs = await GetActiveConfigsForSocietyAsync(societyId, cancellationToken);
-        return MapSocietySummary(society, configs);
-    }
+    //    var configs = await GetActiveConfigsForSocietyAsync(societyId, cancellationToken);
+    //    return MapSocietySummary(society, configs);
+    //}
 
-    public async Task<SocietyResponseDto> CreateSocietyAsync(CreateSocietyDto dto, CancellationToken cancellationToken = default)
-    {
-        var name = dto.Name.Trim();
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new InvalidOperationException("Society name is required.");
-        }
+    //public async Task<SocietyResponseDto> CreateSocietyAsync(CreateSocietyDto dto, CancellationToken cancellationToken = default)
+    //{
+    //    var name = dto.Name.Trim();
+    //    if (string.IsNullOrWhiteSpace(name))
+    //    {
+    //        throw new InvalidOperationException("Society name is required.");
+    //    }
 
-        var duplicate = await _context.SocietyMasters
-            .AnyAsync(x => x.Name.ToLower() == name.ToLower(), cancellationToken);
+    //    var duplicate = await _context.PmAccount
+    //        .AnyAsync(x => x.SocName.ToLower() == name.ToLower(), cancellationToken);
 
-        if (duplicate)
-        {
-            throw new InvalidOperationException("A society with this name already exists.");
-        }
+    //    if (duplicate)
+    //    {
+    //        throw new InvalidOperationException("A society with this name already exists.");
+    //    }
 
-        var society = new SocietyMaster
-        {
-            Code = await GenerateSocietyCodeAsync(cancellationToken),
-            Name = name,
-            Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim()
-        };
+    //    var society = new SocietyMaster
+    //    {
+    //        Code = await GenerateSocietyCodeAsync(cancellationToken),
+    //        Name = name,
+    //        Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim()
+    //    };
 
-        await _context.SocietyMasters.AddAsync(society, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
+    //    await _context.PmAccount.AddAsync(society, cancellationToken);
+    //    await _context.SaveChangesAsync(cancellationToken);
 
-        return MapSocietySummary(society, []);
-    }
+    //    return MapSocietySummary(society, []);
+    //}
 
-    public async Task<SocietyResponseDto?> UpdateSocietyAsync(int societyId, UpdateSocietyDto dto, CancellationToken cancellationToken = default)
-    {
-        var society = await _context.SocietyMasters.FirstOrDefaultAsync(x => x.Id == societyId, cancellationToken);
-        if (society is null)
-        {
-            return null;
-        }
+    //public async Task<SocietyResponseDto?> UpdateSocietyAsync(int societyId, UpdateSocietyDto dto, CancellationToken cancellationToken = default)
+    //{
+    //    var society = await _context.PmAccount.FirstOrDefaultAsync(x => x.ID == societyId, cancellationToken);
+    //    if (society is null)
+    //    {
+    //        return null;
+    //    }
 
-        var name = dto.Name.Trim();
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new InvalidOperationException("Society name is required.");
-        }
+    //    var name = dto.Name.Trim();
+    //    if (string.IsNullOrWhiteSpace(name))
+    //    {
+    //        throw new InvalidOperationException("Society name is required.");
+    //    }
 
-        var duplicate = await _context.SocietyMasters
-            .AnyAsync(x => x.Id != societyId && x.Name.ToLower() == name.ToLower(), cancellationToken);
+    //    var duplicate = await _context.PmAccount
+    //        .AnyAsync(x => x.ID != societyId && x.SocName.ToLower() == name.ToLower(), cancellationToken);
 
-        if (duplicate)
-        {
-            throw new InvalidOperationException("A society with this name already exists.");
-        }
+    //    if (duplicate)
+    //    {
+    //        throw new InvalidOperationException("A society with this name already exists.");
+    //    }
 
-        society.Name = name;
-        society.Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim();
-        await _context.SaveChangesAsync(cancellationToken);
+    //    society.SocName = name;
+    //   // society.Location = string.IsNullOrWhiteSpace(dto.Location) ? null : dto.Location.Trim();
+    //    await _context.SaveChangesAsync(cancellationToken);
 
-        var configs = await GetActiveConfigsForSocietyAsync(societyId, cancellationToken);
-        return MapSocietySummary(society, configs);
-    }
+    //    var configs = await GetActiveConfigsForSocietyAsync(societyId, cancellationToken);
+    //    return MapSocietySummary(society, configs);
+    //}
 
     public async Task DeleteSocietyAsync(int societyId, CancellationToken cancellationToken = default)
     {
-        var society = await _context.SocietyMasters.FirstOrDefaultAsync(x => x.Id == societyId, cancellationToken)
+        var society = await _context.PmAccount.FirstOrDefaultAsync(x => x.ID == societyId, cancellationToken)
             ?? throw new InvalidOperationException("Society not found.");
 
         var hasActiveConfig = await _context.PmSocietyWingFlatConfigs
@@ -130,32 +130,32 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
             throw new InvalidOperationException("Society cannot be deleted because residents are linked to it.");
         }
 
-        _context.SocietyMasters.Remove(society);
+        _context.PmAccount.Remove(society);
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<SocietyStructureDto?> GetSocietyStructureAsync(int societyId, CancellationToken cancellationToken = default)
-    {
-        var society = await GetSocietyAsync(societyId, cancellationToken);
-        if (society is null)
-        {
-            return null;
-        }
+    //public async Task<SocietyStructureDto?> GetSocietyStructureAsync(int societyId, CancellationToken cancellationToken = default)
+    //{
+    //    var society = await GetSocietyAsync(societyId, cancellationToken);
+    //    if (society is null)
+    //    {
+    //        return null;
+    //    }
 
-        var configs = await _context.PmSocietyWingFlatConfigs
-            .AsNoTracking()
-            .Include(x => x.Wing)
-            .Include(x => x.Floor)
-            .Include(x => x.FlatType)
-            .Where(x => x.SocietyId == societyId && x.IsActive)
-            .ToListAsync(cancellationToken);
+    //    var configs = await _context.PmSocietyWingFlatConfigs
+    //        .AsNoTracking()
+    //        .Include(x => x.Wing)
+    //        .Include(x => x.Floor)
+    //        .Include(x => x.FlatType)
+    //        .Where(x => x.SocietyId == societyId && x.IsActive)
+    //        .ToListAsync(cancellationToken);
 
-        return new SocietyStructureDto
-        {
-            Society = society,
-            Wings = BuildStructureTree(configs)
-        };
-    }
+    //    return new SocietyStructureDto
+    //    {
+    //        Society = society,
+    //        Wings = BuildStructureTree(configs)
+    //    };
+    //}
 
     public async Task<List<SocietyFlatConfigResponseDto>> GetSocietyFlatsAsync(
         int societyId,
@@ -202,18 +202,34 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<List<FloorResponseDto>> GetActiveFloorsAsync(int societyId, CancellationToken cancellationToken = default)
+    public async Task<List<FloorResponseDto>> GetActiveFloorsAsync(
+        int societyId,
+        int? wingId = null,
+        CancellationToken cancellationToken = default)
     {
-        return await _context.FloorMasters
+        var floors = _context.FloorMasters
             .AsNoTracking()
-            .Where(x => x.IsActive && x.SocietyID == societyId)
+            .Where(floor => floor.IsActive && floor.SocietyID == societyId);
+
+        if (wingId.HasValue)
+        {
+            var requestedWingId = wingId.Value;
+            floors = floors.Where(floor =>
+                floor.WingID == requestedWingId &&
+                _context.WingMasters.Any(wing =>
+                    wing.Id == requestedWingId &&
+                    wing.SocietyID == societyId &&
+                    wing.IsActive));
+        }
+
+        return await floors
             .OrderBy(x => x.FloorNumber)
             .Select(x => new FloorResponseDto
             {
                 Id = x.Id,
                 SocietyID = x.SocietyID,
                 WingID = x.WingID,
-                Code = x.Code,
+                Code = x.Code ?? string.Empty,
                 Name = x.Name,
                 FloorNumber = x.FloorNumber,
                 IsActive = x.IsActive,
@@ -221,7 +237,41 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
                     config.SocietyId == societyId &&
                     config.WingId == x.WingID &&
                     config.FloorId == x.Id &&
-                    config.IsActive)
+                    config.IsActive &&
+                    config.Floor.IsActive)
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<ResidentFlatConfigResponseDto>> GetActiveFlatConfigurationsAsync(
+        int societyId,
+        int wingId,
+        int floorId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.PmSocietyWingFlatConfigs
+            .AsNoTracking()
+            .Where(config =>
+                config.SocietyId == societyId &&
+                config.WingId == wingId &&
+                config.FloorId == floorId &&
+                config.IsActive &&
+                config.Wing.IsActive &&
+                config.Wing.SocietyID == societyId &&
+                config.Floor.IsActive &&
+                config.Floor.SocietyID == societyId &&
+                config.Floor.WingID == wingId)
+            .OrderBy(config => config.FlatNumber ?? config.FlatType.Type)
+            .Select(config => new ResidentFlatConfigResponseDto
+            {
+                SocietyWingFlatConfigId = config.Id,
+                FlatId = config.FlatID,
+                FlatNumber = config.FlatNumber,
+                FlatTypeName = config.FlatType.Type,
+                FloorId = config.FloorId,
+                FloorName = config.Floor.Name,
+                WingId = config.WingId,
+                WingName = config.Wing.Name
             })
             .ToListAsync(cancellationToken);
     }
@@ -315,119 +365,119 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<GenerateStructurePreviewDto> GenerateStructureAsync(int societyId, GenerateSocietyStructureDto dto, CancellationToken cancellationToken = default)
-    {
-        await EnsureSocietyExistsAsync(societyId, cancellationToken);
+    //public async Task<GenerateStructurePreviewDto> GenerateStructureAsync(int societyId, GenerateSocietyStructureDto dto, CancellationToken cancellationToken = default)
+    //{
+    //    await EnsureSocietyExistsAsync(societyId, cancellationToken);
 
-        var wingIds = dto.WingIds.Distinct().ToList();
-        var floorIds = dto.FloorIds.Distinct().ToList();
-        var flatIds = dto.FlatIds.Distinct().ToList();
+    //    var wingIds = dto.WingIds.Distinct().ToList();
+    //    var floorIds = dto.FloorIds.Distinct().ToList();
+    //    var flatIds = dto.FlatIds.Distinct().ToList();
 
-        if (wingIds.Count == 0 || floorIds.Count == 0 || flatIds.Count == 0)
-        {
-            throw new InvalidOperationException("Select at least one wing, floor, and flat.");
-        }
+    //    if (wingIds.Count == 0 || floorIds.Count == 0 || flatIds.Count == 0)
+    //    {
+    //        throw new InvalidOperationException("Select at least one wing, floor, and flat.");
+    //    }
 
-        var totalMappings = wingIds.Count * floorIds.Count * flatIds.Count;
-        if (totalMappings > MaxBulkMappings)
-        {
-            throw new InvalidOperationException($"Bulk generation is limited to {MaxBulkMappings} mappings per request.");
-        }
+    //    var totalMappings = wingIds.Count * floorIds.Count * flatIds.Count;
+    //    if (totalMappings > MaxBulkMappings)
+    //    {
+    //        throw new InvalidOperationException($"Bulk generation is limited to {MaxBulkMappings} mappings per request.");
+    //    }
 
-        var wings = await _context.WingMasters.AsNoTracking()
-            .Where(x => wingIds.Contains(x.Id) && x.IsActive)
-            .ToListAsync(cancellationToken);
+    //    var wings = await _context.WingMasters.AsNoTracking()
+    //        .Where(x => wingIds.Contains(x.Id) && x.IsActive)
+    //        .ToListAsync(cancellationToken);
 
-        var floors = await _context.FloorMasters.AsNoTracking()
-            .Where(x => floorIds.Contains(x.Id) && x.IsActive)
-            .ToListAsync(cancellationToken);
+    //    var floors = await _context.FloorMasters.AsNoTracking()
+    //        .Where(x => floorIds.Contains(x.Id) && x.IsActive)
+    //        .ToListAsync(cancellationToken);
 
-        var flats = await _context.FlatMasters.AsNoTracking()
-            .Include(x => x.Type)
-            .Where(x => flatIds.Contains(x.Id))
-            .ToListAsync(cancellationToken);
+    //    var flats = await _context.FlatMasters.AsNoTracking()
+    //        .Include(x => x.Type)
+    //        .Where(x => flatIds.Contains(x.Id))
+    //        .ToListAsync(cancellationToken);
 
-        ValidateSelectedMasters(wingIds, floorIds, flatIds, wings, floors, flats);
+    //    ValidateSelectedMasters(wingIds, floorIds, flatIds, wings, floors, flats);
 
-        var existingActive = await _context.PmSocietyWingFlatConfigs
-            .AsNoTracking()
-            .Where(x => x.SocietyId == societyId && x.IsActive)
-            .Select(x => new { x.WingId, x.FloorId, x.FlatTypeId })
-            .ToListAsync(cancellationToken);
+    //    var existingActive = await _context.PmSocietyWingFlatConfigs
+    //        .AsNoTracking()
+    //        .Where(x => x.SocietyId == societyId && x.IsActive)
+    //        .Select(x => new { x.WingId, x.FloorId, x.FlatTypeId })
+    //        .ToListAsync(cancellationToken);
 
-        var existingExact = existingActive
-            .Select(x => ToExactMappingKey(x.WingId, x.FloorId, x.FlatTypeId))
-            .ToHashSet(StringComparer.Ordinal);
+    //    var existingExact = existingActive
+    //        .Select(x => ToExactMappingKey(x.WingId, x.FloorId, x.FlatTypeId))
+    //        .ToHashSet(StringComparer.Ordinal);
 
-        var existingWingFlat = existingActive
-            .Select(x => ToWingFlatKey(x.WingId, x.FlatTypeId))
-            .ToHashSet(StringComparer.Ordinal);
+    //    var existingWingFlat = existingActive
+    //        .Select(x => ToWingFlatKey(x.WingId, x.FlatTypeId))
+    //        .ToHashSet(StringComparer.Ordinal);
 
-        var (eligibleMappings, skippedDuplicates) = BuildEligibleMappings(
-            wings,
-            floors,
-            flats,
-            wingIds,
-            floorIds,
-            flatIds,
-            existingExact,
-            existingWingFlat);
+    //    var (eligibleMappings, skippedDuplicates) = BuildEligibleMappings(
+    //        wings,
+    //        floors,
+    //        flats,
+    //        wingIds,
+    //        floorIds,
+    //        flatIds,
+    //        existingExact,
+    //        existingWingFlat);
 
-        if (dto.PreviewOnly)
-        {
-            return new GenerateStructurePreviewDto
-            {
-                TotalWings = wings.Count,
-                TotalFloors = floors.Count,
-                TotalFlats = flats.Count,
-                TotalMappings = eligibleMappings.Count,
-                SkippedDuplicates = skippedDuplicates,
-                Preview = BuildStructureTree(ToPreviewConfigs(eligibleMappings))
-            };
-        }
+    //    if (dto.PreviewOnly)
+    //    {
+    //        return new GenerateStructurePreviewDto
+    //        {
+    //            TotalWings = wings.Count,
+    //            TotalFloors = floors.Count,
+    //            TotalFlats = flats.Count,
+    //            TotalMappings = eligibleMappings.Count,
+    //            SkippedDuplicates = skippedDuplicates,
+    //            Preview = BuildStructureTree(ToPreviewConfigs(eligibleMappings))
+    //        };
+    //    }
 
-        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-        var created = 0;
+    //    await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+    //    var created = 0;
 
-        try
-        {
-            foreach (var mapping in eligibleMappings)
-            {
-                await UpsertMappingAsync(
-                    societyId,
-                    mapping.WingId,
-                    mapping.FloorId,
-                    mapping.FlatId,
-                    cancellationToken);
-                created++;
-            }
+    //    try
+    //    {
+    //        foreach (var mapping in eligibleMappings)
+    //        {
+    //            await UpsertMappingAsync(
+    //                societyId,
+    //                mapping.WingId,
+    //                mapping.FloorId,
+    //                mapping.FlatId,
+    //                cancellationToken);
+    //            created++;
+    //        }
 
-            await _context.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+    //        await _context.SaveChangesAsync(cancellationToken);
+    //        await transaction.CommitAsync(cancellationToken);
 
-            if (created == 0)
-            {
-                throw new InvalidOperationException("All selected mappings already exist or duplicate flats within the same wing.");
-            }
-        }
-        catch
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
-        }
+    //        if (created == 0)
+    //        {
+    //            throw new InvalidOperationException("All selected mappings already exist or duplicate flats within the same wing.");
+    //        }
+    //    }
+    //    catch
+    //    {
+    //        await transaction.RollbackAsync(cancellationToken);
+    //        throw;
+    //    }
 
-        var structure = await GetSocietyStructureAsync(societyId, cancellationToken);
+    //    //var structure = await GetSocietyStructureAsync(societyId, cancellationToken);
 
-        return new GenerateStructurePreviewDto
-        {
-            TotalWings = wings.Count,
-            TotalFloors = floors.Count,
-            TotalFlats = flats.Count,
-            TotalMappings = created,
-            SkippedDuplicates = skippedDuplicates,
-            Preview = structure?.Wings ?? []
-        };
-    }
+    //    return new GenerateStructurePreviewDto
+    //    {
+    //        TotalWings = wings.Count,
+    //        TotalFloors = floors.Count,
+    //        TotalFlats = flats.Count,
+    //        TotalMappings = created,
+    //        SkippedDuplicates = skippedDuplicates,
+    //        Preview = structure?.Wings ?? []
+    //    };
+    //}
 
     private sealed record EligibleMapping(int WingId, int FloorId, int FlatId, WingMaster Wing, FloorMaster Floor, FlatMaster Flat);
 
@@ -630,7 +680,7 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
 
     private async Task EnsureSocietyExistsAsync(int societyId, CancellationToken cancellationToken)
     {
-        var exists = await _context.SocietyMasters.AnyAsync(x => x.Id == societyId, cancellationToken);
+        var exists = await _context.PmAccount.AnyAsync(x => x.ID == societyId, cancellationToken);
         if (!exists)
         {
             throw new InvalidOperationException("Society not found.");
@@ -645,21 +695,21 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
             .ToListAsync(cancellationToken);
     }
 
-    private static SocietyResponseDto MapSocietySummary(SocietyMaster society, IEnumerable<PmSocietyWingFlatConfig> configs)
-    {
-        var configList = configs.ToList();
-        return new SocietyResponseDto
-        {
-            Id = society.Id,
-            Code = society.Code,
-            Name = society.Name,
-            Location = society.Location,
-            WingCount = configList.Select(x => x.WingId).Distinct().Count(),
-            FloorCount = configList.Select(x => new { x.WingId, x.FloorId }).Distinct().Count(),
-            FlatCount = configList.Count,
-            IsConfigured = configList.Count > 0
-        };
-    }
+    //private static SocietyResponseDto MapSocietySummary(SocietyMaster society, IEnumerable<PmSocietyWingFlatConfig> configs)
+    //{
+    //    var configList = configs.ToList();
+    //    return new SocietyResponseDto
+    //    {
+    //        Id = society.Id,
+    //        Code = society.Code,
+    //        Name = society.Name,
+    //        Location = society.Location,
+    //        WingCount = configList.Select(x => x.WingId).Distinct().Count(),
+    //        FloorCount = configList.Select(x => new { x.WingId, x.FloorId }).Distinct().Count(),
+    //        FlatCount = configList.Count,
+    //        IsConfigured = configList.Count > 0
+    //    };
+    //}
 
     private static List<SocietyWingNodeDto> BuildStructureTree(List<PmSocietyWingFlatConfig> configs)
     {
@@ -730,7 +780,7 @@ public class SocietyConfigurationRepository : ISocietyConfigurationRepository
 
     private async Task<string> GenerateSocietyCodeAsync(CancellationToken cancellationToken)
     {
-        var next = (await _context.SocietyMasters.MaxAsync(x => (int?)x.Id, cancellationToken) ?? 0) + 1;
+        var next = (await _context.PmAccount.MaxAsync(x => (int?)x.ID, cancellationToken) ?? 0) + 1;
         return $"SOC{next:D3}";
     }
 

@@ -33,7 +33,7 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<VisitorVisit> VisitorVisits { get; set; }
 
-    public virtual DbSet<SocietyMaster> SocietyMasters { get; set; }
+    public virtual DbSet<PmAccount> PmAccount { get; set; }
 
     public virtual DbSet<WingMaster> WingMasters { get; set; }
 

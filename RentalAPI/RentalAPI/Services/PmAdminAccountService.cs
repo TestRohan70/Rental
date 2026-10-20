@@ -42,7 +42,7 @@ public class PmAdminAccountService : IPmAdminAccountService
         return await _repository.GetAllAsync();
     }
 
-    public async Task<PmAdminAccount?> GetByIdAsync(int id)
+    public async Task<List<PmAdminAccount>> GetByIdAsync(int id)
     {
         return await _repository.GetByIdAsync(id);
     }

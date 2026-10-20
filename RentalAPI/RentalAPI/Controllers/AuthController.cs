@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RentalAPI.Constants;
@@ -47,22 +48,30 @@ public class AuthController : ControllerBase
             return Unauthorized(new { Message = "User account is inactive." });
         }
 
+        var account = await _context.PmAdminAccounts.FirstOrDefaultAsync(p => p.Email == user.Email && p.IsActive);
         bool isValidPassword = false;
-        if (!string.IsNullOrEmpty(user.Password))
-        {
-            if (user.Password.StartsWith("$2"))
-            {
-                try
-                {
-                    isValidPassword = BCrypt.Net.BCrypt.Verify(dto.Password, user.Password);
-                }
-                catch { }
-            }
 
-            if (!isValidPassword && user.Password == dto.Password)
+        if (account != null &&
+            !string.IsNullOrWhiteSpace(account.PasswordHash))
+        {
+            var hasher = new PasswordHasher<PmAdminAccount>();
+
+            var result = hasher.VerifyHashedPassword(
+                account,
+                account.PasswordHash,
+                dto.Password
+            );
+
+            isValidPassword =
+                result != PasswordVerificationResult.Failed;
+        }
+
+        if (!isValidPassword)
+        {
+            return Unauthorized(new
             {
-                isValidPassword = true;
-            }
+                Message = "Invalid Username or Password."
+            });
         }
 
         if (!isValidPassword)
@@ -75,9 +84,12 @@ public class AuthController : ControllerBase
         int? societyId = null;
         if (roleCode == AppRoles.SocietyAdmin || roleCode == AppRoles.Security)
         {
-            var userMapping = await _context.SocietyUserMappings
-                .FirstOrDefaultAsync(m => m.UserId == user.Id && m.IsActive);
-            societyId = userMapping?.SocietyId;
+            //var userMapping = await _context.SocietyUserMappings
+            //    .FirstOrDefaultAsync(m => m.UserId == user.Id && m.IsActive);
+            //societyId = userMapping?.SocietyId;
+            societyId = await _context.PmAdminAccounts.Where(p => p.Email == user.Email && p.IsActive)
+                         .Select(p => (int?)p.SocietyID)
+                         .FirstOrDefaultAsync();
         }
 
         if (roleCode == "RESIDENT")

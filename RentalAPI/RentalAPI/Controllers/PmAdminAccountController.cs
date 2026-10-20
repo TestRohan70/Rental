@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RentalAPI.DTO;
+using RentalAPI.Services;
 using RentalAPI.Services.IServices;
 
 namespace RentalAPI.Controllers;
@@ -32,16 +33,23 @@ public class PmAdminAccountController : ControllerBase
         return Ok(result);
     }
 
+    //[HttpGet("society/{societyId}")]
+    //public async Task<IActionResult> GetById(int societyId)
+    //{
+    //    var result = await _service.GetByIdAsync(societyId);
+
+    //    if (result == null)
+    //        return NotFound();
+
+    //    return Ok(result);
+    //}
+
+
     [HttpGet("society/{societyId}")]
-    public async Task<IActionResult> GetById(int societyId)
+    public async Task<IActionResult> GetByIdAsync(int societyId)
     {
-        var result = await _service.GetByIdAsync(societyId);
-
-        if (result == null)
-            return NotFound();
-
-        return Ok(result);
+        var accounts = await _service.GetByIdAsync(societyId);
+        return Ok(accounts);
     }
-
 
 }

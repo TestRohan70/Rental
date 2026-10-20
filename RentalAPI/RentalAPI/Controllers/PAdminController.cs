@@ -35,12 +35,15 @@ public class PAdminController : ControllerBase
     }
 
     [HttpGet("masters/floors")]
-    public async Task<IActionResult> GetFloors([FromQuery] int societyId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetFloors(
+        [FromQuery] int societyId,
+        [FromQuery] int? wingId,
+        CancellationToken cancellationToken)
     {
-        if (societyId <= 0)
-            return BadRequest(new { message = "A valid societyId is required." });
+        if (societyId <= 0 || wingId is <= 0)
+            return BadRequest(new { message = "A valid societyId and optional wingId are required." });
 
-        var data = await _repository.GetActiveFloorsAsync(societyId, cancellationToken);
+        var data = await _repository.GetActiveFloorsAsync(societyId, wingId, cancellationToken);
         return Ok(data);
     }
     [HttpPost("masters/floors")]
@@ -62,25 +65,25 @@ public class PAdminController : ControllerBase
         return Ok(data);
     }
 
-    [HttpGet("societies")]
-    public async Task<IActionResult> GetSocieties([FromQuery] string? search, CancellationToken cancellationToken)
-    {
-        var data = await _repository.GetSocietiesAsync(search, cancellationToken);
-        return Ok(data);
-    }
+    //[HttpGet("societies")]
+    //public async Task<IActionResult> GetSocieties([FromQuery] string? search, CancellationToken cancellationToken)
+    //{
+    //    var data = await _repository.GetSocietiesAsync(search, cancellationToken);
+    //    return Ok(data);
+    //}
 
-    [HttpGet("societies/{id:int}")]
-    public async Task<IActionResult> GetSociety(int id, CancellationToken cancellationToken)
-    {
-        var data = await _repository.GetSocietyAsync(id, cancellationToken);
-        return data is null ? NotFound(new { message = "Society not found." }) : Ok(data);
-    }
+    //[HttpGet("societies/{id:int}")]
+    //public async Task<IActionResult> GetSociety(int id, CancellationToken cancellationToken)
+    //{
+    //    var data = await _repository.GetSocietyAsync(id, cancellationToken);
+    //    return data is null ? NotFound(new { message = "Society not found." }) : Ok(data);
+    //}
 
-    [HttpPost("societies")]
-    public async Task<IActionResult> CreateSociety([FromBody] CreateSocietyDto dto, CancellationToken cancellationToken)
-    {
-        return await ExecuteAsync(() => _repository.CreateSocietyAsync(dto, cancellationToken), nameof(GetSociety));
-    }
+    //[HttpPost("societies")]
+    //public async Task<IActionResult> CreateSociety([FromBody] CreateSocietyDto dto, CancellationToken cancellationToken)
+    //{
+    //    return await ExecuteAsync(() => _repository.CreateSocietyAsync(dto, cancellationToken), nameof(GetSociety));
+    //}
 
     [HttpPost("societies/{societyId:int}/admin")]
     [HttpPost("society-admin")]
@@ -121,15 +124,15 @@ public class PAdminController : ControllerBase
         }
     }
 
-    [HttpPut("societies/{id:int}")]
-    public async Task<IActionResult> UpdateSociety(int id, [FromBody] UpdateSocietyDto dto, CancellationToken cancellationToken)
-    {
-        return await ExecuteAsync(async () =>
-        {
-            var result = await _repository.UpdateSocietyAsync(id, dto, cancellationToken);
-            return result ?? throw new KeyNotFoundException("Society not found.");
-        });
-    }
+    //[HttpPut("societies/{id:int}")]
+    //public async Task<IActionResult> UpdateSociety(int id, [FromBody] UpdateSocietyDto dto, CancellationToken cancellationToken)
+    //{
+    //    return await ExecuteAsync(async () =>
+    //    {
+    //        var result = await _repository.UpdateSocietyAsync(id, dto, cancellationToken);
+    //        return result ?? throw new KeyNotFoundException("Society not found.");
+    //    });
+    //}
 
     [HttpDelete("societies/{id:int}")]
     public async Task<IActionResult> DeleteSociety(int id, CancellationToken cancellationToken)
@@ -141,12 +144,12 @@ public class PAdminController : ControllerBase
         });
     }
 
-    [HttpGet("societies/{societyId:int}/structure")]
-    public async Task<IActionResult> GetStructure(int societyId, CancellationToken cancellationToken)
-    {
-        var data = await _repository.GetSocietyStructureAsync(societyId, cancellationToken);
-        return data is null ? NotFound(new { message = "Society not found." }) : Ok(data);
-    }
+    //[HttpGet("societies/{societyId:int}/structure")]
+    //public async Task<IActionResult> GetStructure(int societyId, CancellationToken cancellationToken)
+    //{
+    //    var data = await _repository.GetSocietyStructureAsync(societyId, cancellationToken);
+    //    return data is null ? NotFound(new { message = "Society not found." }) : Ok(data);
+    //}
 
     [HttpGet("societies/{societyId:int}/flats")]
     public async Task<IActionResult> GetSocietyFlats(int societyId, CancellationToken cancellationToken)
@@ -164,11 +167,11 @@ public class PAdminController : ControllerBase
         return await ExecuteAsync(() => _repository.AddMappingAsync(societyId, dto, cancellationToken));
     }
 
-    [HttpPost("societies/{societyId:int}/generate-structure")]
-    public async Task<IActionResult> GenerateStructure(int societyId, [FromBody] GenerateSocietyStructureDto dto, CancellationToken cancellationToken)
-    {
-        return await ExecuteAsync(() => _repository.GenerateStructureAsync(societyId, dto, cancellationToken));
-    }
+    //[HttpPost("societies/{societyId:int}/generate-structure")]
+    //public async Task<IActionResult> GenerateStructure(int societyId, [FromBody] GenerateSocietyStructureDto dto, CancellationToken cancellationToken)
+    //{
+    //    return await ExecuteAsync(() => _repository.GenerateStructureAsync(societyId, dto, cancellationToken));
+    //}
 
     [HttpDelete("societies/{societyId:int}/wings/{wingId:int}")]
     public async Task<IActionResult> DeactivateWing(int societyId, int wingId, CancellationToken cancellationToken)
