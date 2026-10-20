@@ -12,6 +12,8 @@ namespace RentalAPI.Repository.IRepository
         Task<bool> RejectResident(int residentId);
 
         Task<List<PendingResidentDto>> GetPendingResidents(int societyId);
+        Task<List<PendingResidentDto>> GetApprovedResidents(int societyId);
+
         Task<bool> IsAdmin(int adminId);
 
         Task<SysmUser?> Login(string username, string password);
@@ -21,5 +23,7 @@ namespace RentalAPI.Repository.IRepository
         Task<SysmUser> RegisterSecurityStaff(int adminUserId, CreateSecurityUserDto dto);
 
         Task<List<SysmUser>> GetGateSecurityStaff(int adminUserId);
+        Task<int> GetAuthenticatedAdminIdAsync(string username);
+        Task<int> GetAdminAccountIdByUsernameAsync(string username);
     }
 }

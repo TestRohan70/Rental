@@ -34,6 +34,17 @@ public class AdminController : ControllerBase
         var residents = await _adminRepository.GetPendingResidents(societyId);
         return Ok(residents);
     }
+    [HttpGet("ApprovedResidents")] 
+    public async Task<IActionResult> GetApprovedResidents()
+    {
+        var societyIdClaim = User.FindFirst("SocietyId")?.Value;
+        if (!int.TryParse(societyIdClaim, out var societyId))
+        {
+            return Unauthorized(new { Message = "SocietyId not found in token." });
+        }
+        var residents = await _adminRepository.GetApprovedResidents(societyId);
+        return Ok(residents);
+    }
 
     [HttpPut("approve/{id}")]
     public async Task<IActionResult> ApproveResident(int id)
@@ -88,8 +99,15 @@ public class AdminController : ControllerBase
     {
         try
         {
-            int resolvedAdminId = GetAuthenticatedUserId(adminId);
-            var result = await _adminRepository.RegisterSecurityStaff(resolvedAdminId, dto);
+            var username = User?.Identity?.Name;
+
+            if (string.IsNullOrWhiteSpace(username))
+                return Unauthorized(new { message = "User is not authenticated." });
+
+            int admin = await _adminRepository
+                .GetAdminAccountIdByUsernameAsync(username);
+
+            var result = await _adminRepository.RegisterSecurityStaff(admin, dto);
             return Ok(new
             {
                 message = "Gate security staff created successfully.",
@@ -132,4 +150,11 @@ public class AdminController : ControllerBase
 
         return fallbackId ?? 0;
     }
+
+
+
+
+
+
+
 }

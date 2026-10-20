@@ -47,6 +47,36 @@ namespace RentalAPI.Repository
                 .ToListAsync();
         }
 
+
+        public async Task<List<PendingResidentDto>> GetApprovedResidents(int societyId)
+        {
+            return await _context.Residents
+                .Where(r => r.Status == "Approved" &&
+                    r.FlatMappings.Any(fm =>
+                        fm.SocietyWingFlatConfig.SocietyId == societyId))
+                .Select(r => new PendingResidentDto
+                {
+                    Id = r.Id,
+                    UserId = r.UserId,
+                    Name = r.Name,
+                    Role = r.User.RoleNavigation.Name,
+
+                    Wing = r.FlatMappings
+                        .Where(fm => fm.SocietyWingFlatConfig.SocietyId == societyId)
+                        .Select(fm => fm.SocietyWingFlatConfig.Wing.Name)
+                        .FirstOrDefault(),
+
+                    flatNo = r.FlatMappings
+                        .Where(fm => fm.SocietyWingFlatConfig.SocietyId == societyId)
+                        .Select(fm => fm.SocietyWingFlatConfig.FlatNumber)
+                        .FirstOrDefault(),
+
+                    CreatedDate = r.CreatedDate,
+                    Status = r.Status
+                })
+                .ToListAsync();
+        }
+
         public async Task<bool> IsAdmin(int adminId)
         {
             var user = await _context.SysmUsers
@@ -210,15 +240,7 @@ namespace RentalAPI.Repository
 
         public async Task<SysmUser> RegisterSecurityStaff(int adminUserId, CreateSecurityUserDto dto)
         {
-            var adminMapping = await _context.SocietyUserMappings
-                .Include(m => m.User)
-                    .ThenInclude(u => u.RoleNavigation)
-                .FirstOrDefaultAsync(m => m.UserId == adminUserId &&
-                                         m.IsActive &&
-                                         m.User != null &&
-                                         m.User.RoleNavigation != null &&
-                                         m.User.RoleNavigation.Code == AppRoles.SocietyAdmin);
-
+            var adminMapping = await _context.PmAdminAccounts.FirstOrDefaultAsync(a => a.ID == adminUserId && a.IsActive);
             if (adminMapping == null)
             {
                 throw new InvalidOperationException("Only an active SocietyAdmin can register gate security staff.");
@@ -256,7 +278,7 @@ namespace RentalAPI.Repository
 
                 var mapping = new SocietyUserMapping
                 {
-                    SocietyId = adminMapping.SocietyId,
+                    SocietyId = adminMapping.SocietyID,
                     UserId = securityUser.Id,
                     CreatedDate = DateTime.UtcNow,
                     IsActive = true
@@ -297,6 +319,34 @@ namespace RentalAPI.Repository
                             m.User.RoleNavigation.Code == AppRoles.Security)
                 .Select(m => m.User)
                 .ToListAsync();
+        }
+
+        public async Task<int> GetAuthenticatedAdminIdAsync(string username)
+        {
+            var admin = await _context.PmAdminAccounts
+                .Where(a => a.IsActive &&
+                    (a.Username == username || a.Email == username))
+                .Select(a => new { a.ID })
+                .FirstOrDefaultAsync();
+
+            if (admin == null)
+                throw new UnauthorizedAccessException("Admin account not found.");
+
+            return admin.ID;
+        }
+
+        public async Task<int> GetAdminAccountIdByUsernameAsync(string username)
+        {
+            var adminId = await _context.PmAdminAccounts
+                .Where(a => a.IsActive &&
+                            (a.Username == username || a.Email == username))
+                .Select(a => (int?)a.ID)
+                .FirstOrDefaultAsync();
+
+            if (adminId == null)
+                throw new UnauthorizedAccessException("Admin account not found.");
+
+            return adminId.Value;
         }
     }
 }
