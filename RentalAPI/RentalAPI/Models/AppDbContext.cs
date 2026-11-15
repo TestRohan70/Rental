@@ -49,6 +49,7 @@ public partial class AppDbContext : DbContext
     public virtual DbSet<PmAccount> PmAccounts { get; set; }
     public virtual DbSet<PmAdminAccount> PmAdminAccounts { get; set; }
     public virtual DbSet<PmFlatConfig> PmFlatConfigs { get; set; }
+    public DbSet<SocietySecurityMapping> SocietySecurityMappings{get;set;}
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -99,6 +100,21 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(e => e.FlatTypeID)
                 .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("FK_pmFlatConfig_FlatCategory");
+        });
+
+        modelBuilder.Entity<SocietySecurityMapping>(entity =>
+        {
+            entity.ToTable("SocietySecurityMapping");
+
+            entity.HasKey(e => e.ID);
+
+            entity.HasIndex(e => new { e.SocietyID, e.UserID })
+                .IsUnique();
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserID)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<SysmUser>(entity =>

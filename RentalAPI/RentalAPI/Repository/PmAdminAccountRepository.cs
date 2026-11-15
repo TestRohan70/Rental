@@ -38,6 +38,7 @@ public class PmAdminAccountRepository : IPmAdminAccountRepository
             Email = email,
             Password = account.PasswordHash,
             RoleId = adminRole.Id,
+            AdminID = account.ID,
             IsActive = account.IsActive,
             CreatedDate = DateTime.UtcNow,
             UpdatedDate = null

@@ -25,7 +25,7 @@ public class AdminController : ControllerBase
 
     [HttpGet("pendingResidents")]
     public async Task<IActionResult> GetPendingResidents()
-    {
+        {
         var societyIdClaim = User.FindFirst("SocietyId")?.Value;
         if (!int.TryParse(societyIdClaim, out var societyId))
         {

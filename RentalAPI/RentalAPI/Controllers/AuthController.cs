@@ -47,39 +47,44 @@ public class AuthController : ControllerBase
         {
             return Unauthorized(new { Message = "User account is inactive." });
         }
-
-        var account = await _context.PmAdminAccounts.FirstOrDefaultAsync(p => p.Email == user.Email && p.IsActive);
-        bool isValidPassword = false;
-
-        if (account != null &&
-            !string.IsNullOrWhiteSpace(account.PasswordHash))
-        {
-            var hasher = new PasswordHasher<PmAdminAccount>();
-
-            var result = hasher.VerifyHashedPassword(
-                account,
-                account.PasswordHash,
-                dto.Password
-            );
-
-            isValidPassword =
-                result != PasswordVerificationResult.Failed;
-        }
-
-        if (!isValidPassword)
-        {
-            return Unauthorized(new
-            {
-                Message = "Invalid Username or Password."
-            });
-        }
-
-        if (!isValidPassword)
-        {
-            return Unauthorized(new { Message = "Invalid Username or Password." });
-        }
-
         var roleCode = user.RoleNavigation?.Code ?? AppRoles.Resident;
+        
+        
+        
+        if(roleCode== "SOCIETYADMIN")
+        {
+
+            var account = await _context.PmAdminAccounts.FirstOrDefaultAsync(p => p.Email == user.Email && p.IsActive);
+            bool isValidPassword = false;
+
+            if (account != null &&
+                !string.IsNullOrWhiteSpace(account.PasswordHash))
+            {
+                var hasher = new PasswordHasher<PmAdminAccount>();
+
+                var result = hasher.VerifyHashedPassword(
+                    account,
+                    account.PasswordHash,
+                    dto.Password
+                );
+
+                isValidPassword =
+                    result != PasswordVerificationResult.Failed;
+            }
+
+
+
+            if (!isValidPassword)
+            {
+                return Unauthorized(new { Message = "Invalid Username or Password." });
+            }
+
+
+
+        }
+
+
+
 
         int? societyId = null;
         if (roleCode == AppRoles.SocietyAdmin || roleCode == AppRoles.Security)

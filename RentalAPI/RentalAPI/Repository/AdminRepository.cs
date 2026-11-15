@@ -276,15 +276,15 @@ namespace RentalAPI.Repository
                 await _context.SysmUsers.AddAsync(securityUser);
                 await _context.SaveChangesAsync();
 
-                var mapping = new SocietyUserMapping
+                var mapping = new SocietySecurityMapping
                 {
-                    SocietyId = adminMapping.SocietyID,
-                    UserId = securityUser.Id,
+                    SocietyID = adminMapping.SocietyID,
+                    UserID = securityUser.Id,
                     CreatedDate = DateTime.UtcNow,
                     IsActive = true
                 };
 
-                await _context.SocietyUserMappings.AddAsync(mapping);
+                await _context.SocietySecurityMappings.AddAsync(mapping);
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
@@ -299,25 +299,35 @@ namespace RentalAPI.Repository
 
         public async Task<List<SysmUser>> GetGateSecurityStaff(int adminUserId)
         {
-            var adminMapping = await _context.SocietyUserMappings
-                .FirstOrDefaultAsync(m => m.UserId == adminUserId && m.IsActive);
+            // Get SocietyID using SysmUser.AdminID
+            var societyId = await (
+                from admin in _context.SysmUsers
+                join account in _context.PmAdminAccounts
+                    on admin.AdminID equals account.ID
+                where admin.Id == adminUserId
+                      && admin.IsActive
+                      && account.IsActive
+                select account.SocietyID
+            ).FirstOrDefaultAsync();
 
-            if (adminMapping == null)
+            if (societyId == 0)
             {
                 return new List<SysmUser>();
             }
 
-            return await _context.SocietyUserMappings
+            // Get security staff associated with the same society
+            return await _context.SocietySecurityMappings
                 .AsNoTracking()
                 .Include(m => m.User)
                     .ThenInclude(u => u.RoleNavigation)
-                .Where(m => m.SocietyId == adminMapping.SocietyId &&
-                            m.IsActive &&
-                            m.User != null &&
-                            m.User.IsActive &&
-                            m.User.RoleNavigation != null &&
-                            m.User.RoleNavigation.Code == AppRoles.Security)
-                .Select(m => m.User)
+                .Where(m =>
+                    m.SocietyID == societyId &&
+                    m.IsActive &&
+                    m.User != null &&
+                    m.User.IsActive &&
+                    m.User.RoleNavigation != null &&
+                    m.User.RoleNavigation.Code == AppRoles.Security)
+                .Select(m => m.User!)
                 .ToListAsync();
         }
 

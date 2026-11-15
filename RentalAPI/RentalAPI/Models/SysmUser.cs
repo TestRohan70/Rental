@@ -22,7 +22,7 @@ public partial class SysmUser
     public string? Role { get; set; }
 
     public int? RoleId { get; set; }
-
+    public int? AdminID { get; set; }
     public bool IsActive { get; set; } = true;
 
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
